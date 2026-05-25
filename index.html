@@ -1114,40 +1114,54 @@ function importarPDF(input) {
 }
 
 function processarTextoPDF(texto) {
-  // Padrão CPF: 000.000.000-00
-  var regexLinha = /(\d{3}\.\d{3}\.\d{3}-\d{2})\s+([\w-]+)\s+P\s+(.+?)\s+----\s+(AB|A\/B|A|B)/g;
-  var match;
   var importados = 0;
   var duplicados = 0;
   var dataHoje = hj();
   var unidade = usr.un || "Francisco Morato";
+  var veiPadrao = VH[unidade].carros[0];
 
-  // Mapear categoria do PDF para categoria do app
   function mapCat(cat) {
-    if (cat === "AB" || cat === "A/B") return "Primeira Habilitação A/B";
+    cat = cat.trim();
+    if (cat === "AB" || cat === "A/B" || cat === "AB") return "Primeira Habilitação A/B";
     if (cat === "A") return "Primeira Habilitação A";
     if (cat === "B") return "Primeira Habilitação B";
     return "Primeira Habilitação B";
   }
 
-  // Veículo padrão da unidade
-  var veiPadrao = VH[unidade].carros[0];
+  // Dividir texto em linhas e processar cada uma
+  var linhas = texto.split(/[\n\r]+/);
 
-  while ((match = regexLinha.exec(texto)) !== null) {
-    var cpf  = match[1].trim();
-    var nome = match[3].trim();
-    var cat  = mapCat(match[4].trim());
+  for (var i = 0; i < linhas.length; i++) {
+    var linha = linhas[i].trim();
 
-    // Verificar se CPF já existe
+    // Buscar CPF no formato 000.000.000-00 ou 000 000 000-00
+    var cpfMatch = linha.match(/(\d{3}[\. ]\d{3}[\. ]\d{3}[-]\d{2})/);
+    if (!cpfMatch) continue;
+
+    var cpf = cpfMatch[1].replace(/\s/g, "").replace(/\./g, "."); // normalizar
+
+    // Buscar categoria no final da linha: AB, A/B, A ou B
+    var catMatch = linha.match(/\b(AB|A\/B|A|B)\s*$/);
+    if (!catMatch) {
+      // tentar buscar AB ou B em qualquer posição depois do RENACH
+      catMatch = linha.match(/----\s+(AB|A\/B|A|B)/);
+    }
+    var cat = catMatch ? mapCat(catMatch[1]) : "Primeira Habilitação B";
+
+    // Buscar nome: texto em maiúsculas depois do RENACH (SP-XXXXX-X P NOME)
+    var nomeMatch = linha.match(/SP-[\d]+-[\d]+\s+P\s+([A-Z][A-Z\s]+?)\s+----/);
+    if (!nomeMatch) {
+      // tentar outro padrão: depois do CPF e RENACH vem o nome
+      nomeMatch = linha.match(/\d{2}\s+P\s+([A-ZÁÉÍÓÚÀÂÊÔÃÕÇ][A-ZÁÉÍÓÚÀÂÊÔÃÕÇ\s]+?)\s+[-]{2,}/);
+    }
+    var nome = nomeMatch ? nomeMatch[1].trim() : "Aluno Importado";
+
+    // Verificar duplicata
     var existe = false;
-    for (var i = 0; i < alunos.length; i++) {
-      if (alunos[i].cpf === cpf) { existe = true; break; }
+    for (var j = 0; j < alunos.length; j++) {
+      if (alunos[j].cpf === cpf) { existe = true; break; }
     }
-
-    if (existe) {
-      duplicados++;
-      continue;
-    }
+    if (existe) { duplicados++; continue; }
 
     alunos.push({
       id: Date.now() + Math.random(),
@@ -1169,7 +1183,9 @@ function processarTextoPDF(texto) {
   }
 
   if (importados === 0) {
-    alert("Nenhum aluno encontrado no PDF. Verifique se o arquivo é o relatório correto.");
+    // Mostrar trecho do texto para debug
+    var preview = texto.substring(0, 500);
+    alert("Nenhum aluno encontrado.\n\nVerifique se é o relatório correto.\n\nTexto lido:\n" + preview);
     return;
   }
 
