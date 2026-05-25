@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>DanPri Exames</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <style>
 :root{
   --bg:#0a0e1a;--bg2:#0f1629;--bg3:#141c35;--bg4:#1a2340;
@@ -1072,43 +1071,22 @@ function confirmarEdicao() {
 
 
 // ── IMPORTAR PDF ────────────────────────────────────────────────────────────
-pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
-
+// ── IMPORTAR PDF ────────────────────────────────────────────────────────────
 function importarPDF(input) {
   var file = input.files[0];
   if (!file) return;
-  input.value = ""; // limpar para permitir re-importar mesmo arquivo
-
+  input.value = "";
   var reader = new FileReader();
   reader.onload = function(e) {
-    var typedarray = new Uint8Array(e.target.result);
-    pdfjsLib.getDocument(typedarray).promise.then(function(pdf) {
-      var textoTotal = "";
-      var paginas = [];
-      for (var p = 1; p <= pdf.numPages; p++) {
-        paginas.push(p);
-      }
-      // Ler todas as páginas em sequência
-      var lerPagina = function(idx) {
-        if (idx >= paginas.length) {
-          processarTextoPDF(textoTotal);
-          return;
-        }
-        pdf.getPage(paginas[idx]).then(function(page) {
-          page.getTextContent().then(function(content) {
-            content.items.forEach(function(item) {
-              textoTotal += item.str + " ";
-            });
-            textoTotal += "
-";
-            lerPagina(idx + 1);
-          });
-        });
-      };
-      lerPagina(0);
-    }).catch(function(err) {
-      alert("Erro ao ler o PDF. Certifique-se que é um PDF digital (não escaneado).");
-    });
+    var bytes = new Uint8Array(e.target.result);
+    var texto = "";
+    for (var i = 0; i < bytes.length; i++) {
+      var b = bytes[i];
+      if (b >= 32 && b <= 126) { texto += String.fromCharCode(b); }
+      else if (b === 10 || b === 13) { texto += "\n"; }
+      else { texto += " "; }
+    }
+    processarTextoPDF(texto);
   };
   reader.readAsArrayBuffer(file);
 }
