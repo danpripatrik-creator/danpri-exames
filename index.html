@@ -1183,10 +1183,68 @@ function processarTextoPDF(texto) {
   }
 
   if (importados === 0) {
-    // Mostrar trecho do texto para debug
-    var preview = texto.substring(0, 500);
-    alert("Nenhum aluno encontrado.\n\nVerifique se é o relatório correto.\n\nTexto lido:\n" + preview);
-    return;
+    // Tentar padrão mais simples: só CPF na linha
+    var linhas2 = texto.split(/\s+/);
+    var textoLimpo = texto.replace(/\s+/g, " ");
+    
+    // Padrão super simples: qualquer CPF seguido de conteúdo
+    var regexSimples = /(\d{3}\.\d{3}\.\d{3}-\d{2})/g;
+    var matchCpf;
+    var cpfsEncontrados = [];
+    while ((matchCpf = regexSimples.exec(textoLimpo)) !== null) {
+      cpfsEncontrados.push(matchCpf[1]);
+    }
+    
+    if (cpfsEncontrados.length === 0) {
+      var preview = textoLimpo.substring(0, 800);
+      alert("Texto lido do PDF (primeiros 800 chars):\n\n" + preview);
+      return;
+    }
+
+    // Encontrou CPFs — tentar extrair nome e cat do contexto
+    for (var ci = 0; ci < cpfsEncontrados.length; ci++) {
+      var cpf = cpfsEncontrados[ci];
+      var existe = false;
+      for (var j = 0; j < alunos.length; j++) {
+        if (alunos[j].cpf === cpf) { existe = true; break; }
+      }
+      if (existe) { duplicados++; continue; }
+
+      // Pegar texto após o CPF para extrair nome e cat
+      var pos = textoLimpo.indexOf(cpf);
+      var trecho = textoLimpo.substring(pos, pos + 100);
+      
+      // Buscar nome em maiúsculas
+      var nomeM = trecho.match(/[A-Z]{2,}(?:\s[A-Z]{2,}){1,5}/);
+      var nome = nomeM ? nomeM[0].trim() : "Aluno " + cpf;
+      
+      // Buscar categoria
+      var catM = trecho.match(/\b(AB|A\/B|B|A)\b/);
+      var cat = catM ? mapCat(catM[1]) : "Primeira Habilitação B";
+
+      alunos.push({
+        id: Date.now() + Math.random(),
+        nome: nome,
+        cpf: cpf,
+        ldv: "",
+        cat: cat,
+        un: unidade,
+        rst: "Sem restrições",
+        dt: dataHoje,
+        hr: "08:00",
+        vei: veiPadrao,
+        obs: "Importado do PDF — complete LDV, horário e veículo",
+        res: null,
+        dtR: null,
+        gr: null
+      });
+      importados++;
+    }
+
+    if (importados === 0) {
+      alert("Nenhum aluno encontrado. CPFs encontrados: " + cpfsEncontrados.length);
+      return;
+    }
   }
 
   salvarNuvem();
