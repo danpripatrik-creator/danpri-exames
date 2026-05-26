@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>DanPri Exames</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
 <style>
 :root{
   --bg:#0a0e1a;--bg2:#0f1629;--bg3:#141c35;--bg4:#1a2340;
@@ -1076,17 +1077,42 @@ function importarPDF(input) {
   var file = input.files[0];
   if (!file) return;
   input.value = "";
+
+  // Configurar worker do PDF.js
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js";
+
   var reader = new FileReader();
   reader.onload = function(e) {
-    var bytes = new Uint8Array(e.target.result);
-    var texto = "";
-    for (var i = 0; i < bytes.length; i++) {
-      var b = bytes[i];
-      if (b >= 32 && b <= 126) { texto += String.fromCharCode(b); }
-      else if (b === 10 || b === 13) { texto += "\n"; }
-      else { texto += " "; }
-    }
-    processarTextoPDF(texto);
+    var loadingTask = pdfjsLib.getDocument({data: e.target.result});
+    loadingTask.promise.then(function(pdf) {
+      var textoTotal = "";
+      var totalPaginas = pdf.numPages;
+      var paginasLidas = 0;
+
+      for (var p = 1; p <= totalPaginas; p++) {
+        (function(numPag) {
+          pdf.getPage(numPag).then(function(page) {
+            page.getTextContent().then(function(content) {
+              var linhaPrev = -1;
+              content.items.forEach(function(item) {
+                if (item.transform && Math.abs(item.transform[5] - linhaPrev) > 2) {
+                  textoTotal += "\n";
+                  linhaPrev = item.transform[5];
+                }
+                textoTotal += item.str + " ";
+              });
+              textoTotal += "\n";
+              paginasLidas++;
+              if (paginasLidas === totalPaginas) {
+                processarTextoPDF(textoTotal);
+              }
+            });
+          });
+        })(p);
+      }
+    }).catch(function(err) {
+      alert("Erro ao ler PDF: " + err.message);
+    });
   };
   reader.readAsArrayBuffer(file);
 }
