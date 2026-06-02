@@ -1125,130 +1125,90 @@ function processarTextoPDF(texto) {
   var veiPadrao = VH[unidade].carros[0];
 
   function mapCat(cat) {
-    cat = cat.trim();
-    if (cat === "AB" || cat === "A/B" || cat === "AB") return "Primeira Habilitação A/B";
+    cat = (cat || "").trim().toUpperCase();
+    if (cat === "AB" || cat === "A/B") return "Primeira Habilitação A/B";
     if (cat === "A") return "Primeira Habilitação A";
     if (cat === "B") return "Primeira Habilitação B";
     return "Primeira Habilitação B";
   }
 
-  // Dividir texto em linhas e processar cada uma
-  var linhas = texto.split(/[\n\r]+/);
-
-  for (var i = 0; i < linhas.length; i++) {
-    var linha = linhas[i].trim();
-
-    // Buscar CPF no formato 000.000.000-00 ou 000 000 000-00
-    var cpfMatch = linha.match(/(\d{3}[\. ]\d{3}[\. ]\d{3}[-]\d{2})/);
-    if (!cpfMatch) continue;
-
-    var cpf = cpfMatch[1].replace(/\s/g, "").replace(/\./g, "."); // normalizar
-
-    // Buscar categoria no final da linha: AB, A/B, A ou B
-    var catMatch = linha.match(/\b(AB|A\/B|A|B)\s*$/);
-    if (!catMatch) {
-      // tentar buscar AB ou B em qualquer posição depois do RENACH
-      catMatch = linha.match(/----\s+(AB|A\/B|A|B)/);
+  function placaParaVeiculo(placa, un) {
+    var placaLimpa = placa.replace(/-/g,"").replace(/\s/g,"").toUpperCase();
+    var todos = VH[un].carros.concat(VH[un].motos);
+    for (var i = 0; i < todos.length; i++) {
+      var p = todos[i].p.replace(/-/g,"").replace(/\s/g,"").toUpperCase();
+      if (p === placaLimpa) return todos[i];
     }
-    var cat = catMatch ? mapCat(catMatch[1]) : "Primeira Habilitação B";
+    return {p: placa.toUpperCase(), m: "Verificar"};
+  }
 
-    // Buscar nome: texto em maiúsculas depois do RENACH (SP-XXXXX-X P NOME)
-    var nomeMatch = linha.match(/SP-[\d]+-[\d]+\s+P\s+([A-Z][A-Z\s]+?)\s+----/);
-    if (!nomeMatch) {
-      // tentar outro padrão: depois do CPF e RENACH vem o nome
-      nomeMatch = linha.match(/\d{2}\s+P\s+([A-ZÁÉÍÓÚÀÂÊÔÃÕÇ][A-ZÁÉÍÓÚÀÂÊÔÃÕÇ\s]+?)\s+[-]{2,}/);
+  function adicionarAluno(nome, cpf, cat, placa, horario, obs) {
+    if (cpf) {
+      for (var j = 0; j < alunos.length; j++) {
+        if (alunos[j].cpf === cpf) { duplicados++; return; }
+      }
     }
-    var nome = nomeMatch ? nomeMatch[1].trim() : "Aluno Importado";
-
-    // Verificar duplicata
-    var existe = false;
-    for (var j = 0; j < alunos.length; j++) {
-      if (alunos[j].cpf === cpf) { existe = true; break; }
-    }
-    if (existe) { duplicados++; continue; }
-
+    var vei = placa ? placaParaVeiculo(placa, unidade) : veiPadrao;
     alunos.push({
       id: Date.now() + Math.random(),
-      nome: nome,
-      cpf: cpf,
+      nome: nome || "Aluno Importado",
+      cpf: cpf || "",
       ldv: "",
-      cat: cat,
+      cat: mapCat(cat),
       un: unidade,
       rst: "Sem restrições",
       dt: dataHoje,
-      hr: "08:00",
-      vei: veiPadrao,
-      obs: "Importado do PDF — complete LDV, horário e veículo",
-      res: null,
-      dtR: null,
-      gr: null
+      hr: horario || "08:00",
+      vei: vei,
+      obs: obs || "Importado do PDF",
+      res: null, dtR: null, gr: null
     });
     importados++;
   }
 
+  var textoLimpo = texto.replace(/[ \t]+/g, " ");
+  var linhas = texto.split(/[\n\r]+/);
+
+  // ── FORMATO 1: DETRAN com CPF ──
+  // Ex: 231.902.598-79 SP-02899533-4 P ADEMIR DA SILV ---- AB
+  var temCPF = /(\d{3}\.\d{3}\.\d{3}-\d{2})/.test(textoLimpo);
+  if (temCPF) {
+    for (var i = 0; i < linhas.length; i++) {
+      var l = linhas[i].trim();
+      var cpfM = l.match(/(\d{3}\.\d{3}\.\d{3}-\d{2})/);
+      if (!cpfM) continue;
+      var cpf = cpfM[1];
+      var catM = l.match(/----\s*(AB|A\/B|A|B)/) || l.match(/\b(AB|A\/B|A|B)\s*$/);
+      var cat = catM ? catM[catM.length-1] : "B";
+      var nomeM = l.match(/SP-[\w-]+\s+P\s+([A-Z][A-Z\s]+?)\s+----/);
+      var nome = nomeM ? nomeM[1].trim() : "Aluno " + cpf;
+      adicionarAluno(nome, cpf, cat, null, "08:00", "Importado — complete LDV, horário e veículo");
+    }
+  }
+
+  // ── FORMATO 2: Relatório com número sequencial, nome, placa e horário ──
+  // Ex: 01- ANDERSON APAREC JEFFERSON (1)A SVS-9F46 OK 02T 18/03 08:00
   if (importados === 0) {
-    // Tentar padrão mais simples: só CPF na linha
-    var linhas2 = texto.split(/\s+/);
-    var textoLimpo = texto.replace(/\s+/g, " ");
-    
-    // Padrão super simples: qualquer CPF seguido de conteúdo
-    var regexSimples = /(\d{3}\.\d{3}\.\d{3}-\d{2})/g;
-    var matchCpf;
-    var cpfsEncontrados = [];
-    while ((matchCpf = regexSimples.exec(textoLimpo)) !== null) {
-      cpfsEncontrados.push(matchCpf[1]);
-    }
-    
-    if (cpfsEncontrados.length === 0) {
-      var preview = textoLimpo.substring(0, 800);
-      alert("Texto lido do PDF (primeiros 800 chars):\n\n" + preview);
-      return;
-    }
-
-    // Encontrou CPFs — tentar extrair nome e cat do contexto
-    for (var ci = 0; ci < cpfsEncontrados.length; ci++) {
-      var cpf = cpfsEncontrados[ci];
-      var existe = false;
-      for (var j = 0; j < alunos.length; j++) {
-        if (alunos[j].cpf === cpf) { existe = true; break; }
+    for (var k = 0; k < linhas.length; k++) {
+      var l2 = linhas[k].trim();
+      // Padrão: 01- NOME... (N)CAT PLACA OK ... HH:MM
+      var m = l2.match(/^(\d{1,3})-\s+([A-Z][A-Z\s]{2,30?})\s+.*?\(\d\)([AB\/]+)\s+([A-Z0-9]{2,4}-?[0-9A-Z]{2,4})\s+OK.*(\d{2}:\d{2})/);
+      if (m) {
+        adicionarAluno(m[2].trim(), "", m[3], m[4], m[5], "Importado — complete CPF e LDV");
+        continue;
       }
-      if (existe) { duplicados++; continue; }
-
-      // Pegar texto após o CPF para extrair nome e cat
-      var pos = textoLimpo.indexOf(cpf);
-      var trecho = textoLimpo.substring(pos, pos + 100);
-      
-      // Buscar nome em maiúsculas
-      var nomeM = trecho.match(/[A-Z]{2,}(?:\s[A-Z]{2,}){1,5}/);
-      var nome = nomeM ? nomeM[0].trim() : "Aluno " + cpf;
-      
-      // Buscar categoria
-      var catM = trecho.match(/\b(AB|A\/B|B|A)\b/);
-      var cat = catM ? mapCat(catM[1]) : "Primeira Habilitação B";
-
-      alunos.push({
-        id: Date.now() + Math.random(),
-        nome: nome,
-        cpf: cpf,
-        ldv: "",
-        cat: cat,
-        un: unidade,
-        rst: "Sem restrições",
-        dt: dataHoje,
-        hr: "08:00",
-        vei: veiPadrao,
-        obs: "Importado do PDF — complete LDV, horário e veículo",
-        res: null,
-        dtR: null,
-        gr: null
-      });
-      importados++;
+      // Padrão alternativo sem horário no fim
+      var m2 = l2.match(/^(\d{1,3})-\s+([A-Z][A-Z\s]{2,25})\s+\w.*?\(\d\)([AB\/]+)\s+([A-Z0-9]{2,4}-?[0-9A-Z]{2,4})/);
+      if (m2) {
+        var hrM = l2.match(/(\d{2}:\d{2})/);
+        adicionarAluno(m2[2].trim(), "", m2[3], m2[4], hrM ? hrM[1] : "08:00", "Importado — complete CPF e LDV");
+      }
     }
+  }
 
-    if (importados === 0) {
-      alert("Nenhum aluno encontrado. CPFs encontrados: " + cpfsEncontrados.length);
-      return;
-    }
+  if (importados === 0) {
+    alert("Nenhum aluno encontrado.\n\nTexto lido (início):\n" + textoLimpo.substring(0, 500));
+    return;
   }
 
   salvarNuvem();
@@ -1257,7 +1217,8 @@ function processarTextoPDF(texto) {
 
   var msg = importados + " aluno(s) importado(s) com sucesso!";
   if (duplicados > 0) msg += "\n" + duplicados + " já existiam e foram ignorados.";
-  msg += "\n\nComplete o LDV, horário e veículo de cada aluno.";
+  if (!temCPF) msg += "\n\n⚠️ Este PDF não tem CPF.\nComplete CPF e LDV de cada aluno usando o botão Editar.";
+  else msg += "\n\nComplete o LDV, horário e veículo de cada aluno.";
   alert(msg);
 }
 
