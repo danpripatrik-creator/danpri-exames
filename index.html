@@ -1078,40 +1078,50 @@ function importarPDF(input) {
   if (!file) return;
   input.value = "";
 
-  // Configurar worker do PDF.js
+  if (typeof pdfjsLib === "undefined") {
+    alert("Biblioteca PDF nao carregada. Verifique sua conexao com internet.");
+    return;
+  }
+
   pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js";
 
   var reader = new FileReader();
+  reader.onerror = function() { alert("Erro ao ler o arquivo."); };
   reader.onload = function(e) {
-    var loadingTask = pdfjsLib.getDocument({data: e.target.result});
+    var loadingTask = pdfjsLib.getDocument({data: new Uint8Array(e.target.result)});
     loadingTask.promise.then(function(pdf) {
-      var textoTotal = "";
+      var paginasTexto = [];
       var totalPaginas = pdf.numPages;
       var paginasLidas = 0;
-
       for (var p = 1; p <= totalPaginas; p++) {
         (function(numPag) {
           pdf.getPage(numPag).then(function(page) {
             page.getTextContent().then(function(content) {
-              var linhaPrev = -1;
+              var linhasPag = {};
               content.items.forEach(function(item) {
-                if (item.transform && Math.abs(item.transform[5] - linhaPrev) > 2) {
-                  textoTotal += "\n";
-                  linhaPrev = item.transform[5];
-                }
-                textoTotal += item.str + " ";
+                var y = item.transform ? Math.round(item.transform[5]) : 0;
+                if (!linhasPag[y]) linhasPag[y] = [];
+                linhasPag[y].push({x: item.transform ? item.transform[4] : 0, str: item.str});
               });
-              textoTotal += "\n";
+              var ys = Object.keys(linhasPag).map(Number).sort(function(a,b){return b-a;});
+              var textoPag = "";
+              ys.forEach(function(y) {
+                var itens = linhasPag[y].sort(function(a,b){return a.x-b.x;});
+                textoPag += itens.map(function(it){return it.str;}).join(" ") + "\n";
+              });
+              paginasTexto[numPag] = textoPag;
               paginasLidas++;
               if (paginasLidas === totalPaginas) {
-                processarTextoPDF(textoTotal);
+                var textoFinal = "";
+                for (var i = 1; i <= totalPaginas; i++) textoFinal += (paginasTexto[i] || "");
+                processarTextoPDF(textoFinal);
               }
-            });
-          });
+            }).catch(function(e){ alert("Erro pagina: "+e.message); });
+          }).catch(function(e){ alert("Erro get page: "+e.message); });
         })(p);
       }
     }).catch(function(err) {
-      alert("Erro ao ler PDF: " + err.message);
+      alert("Erro ao abrir PDF: " + err.message);
     });
   };
   reader.readAsArrayBuffer(file);
@@ -1177,7 +1187,8 @@ function processarTextoPDF(texto) {
     .replace(/[ 	]{2,}/g, " ");
 
   var linhas = textoNorm.split(/[
-]+/);
+
+]+/);
 
   // ── FORMATO 2: 01- NOME INSTRUTOR (N)CAT PLACA OK ... HH:MM ──
   // Detectar pelo padrão "NN- " no início da linha
