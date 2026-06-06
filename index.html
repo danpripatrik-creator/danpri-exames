@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>DanPri Exames</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <style>
 :root{
   --bg:#0a0e1a;--bg2:#0f1629;--bg3:#141c35;--bg4:#1a2340;
@@ -1078,48 +1077,126 @@ function importarPDF(input) {
   if (!file) return;
   input.value = "";
 
-  // Usar PDF.js com worker inline para evitar problemas de CORS
-  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+  // URL do servidor de conversão
+  var SERVER_URL = "/converter";
 
-  var reader = new FileReader();
-  reader.onerror = function() { alert("Erro ao ler o arquivo."); };
-  reader.onload = function(e) {
-    var typedArray = new Uint8Array(e.target.result);
-    pdfjsLib.getDocument(typedArray).promise.then(function(pdf) {
-      var totalPaginas = pdf.numPages;
-      var promises = [];
-      for (var p = 1; p <= totalPaginas; p++) {
-        promises.push(pdf.getPage(p).then(function(page) {
-          return page.getTextContent().then(function(content) {
-            // Agrupar itens por linha (coordenada Y)
-            var grupos = {};
-            content.items.forEach(function(item) {
-              var y = item.transform ? Math.round(item.transform[5]) : 0;
-              if (!grupos[y]) grupos[y] = [];
-              grupos[y].push({x: item.transform ? item.transform[4] : 0, str: item.str});
-            });
-            // Ordenar linhas de cima para baixo (Y decrescente)
-            var ys = Object.keys(grupos).map(Number).sort(function(a,b){ return b - a; });
-            var textoPagina = "";
-            ys.forEach(function(y) {
-              var itens = grupos[y].sort(function(a,b){ return a.x - b.x; });
-              textoPagina += itens.map(function(it){ return it.str; }).join(" ").trim() + "\n";
-            });
-            return textoPagina;
-          });
-        }));
-      }
-      Promise.all(promises).then(function(paginas) {
-        var textoFinal = paginas.join("\n");
-        if (!textoFinal.trim()) {
-          alert("PDF sem texto legível. Pode ser uma imagem escaneada.");
-          return;
-        }
-        processarTextoPDF(textoFinal);
-      });
-    }).catch(function(err) {
-      alert("Erro ao abrir PDF: " + err.message + "\n\nVerifique se o arquivo é um PDF válido.");
+  var formData = new FormData();
+  formData.append("file", file);
+
+  // Mostrar loading
+  var loadDiv = document.createElement("div");
+  loadDiv.id = "pdf-loading";
+  loadDiv.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:9999;color:#fff;font-size:16px;font-family:sans-serif";
+  loadDiv.innerHTML = "<div style=\"text-align:center\"><div style=\"font-size:32px;margin-bottom:12px\">⏳</div><div>Lendo PDF...</div></div>";
+  document.body.appendChild(loadDiv);
+
+  fetch(SERVER_URL, {method: "POST", body: formData})
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      document.body.removeChild(loadDiv);
+      if (data.erro) { alert("Erro: " + data.erro); return; }
+      if (!data.alunos || data.alunos.length === 0) { alert("Nenhum aluno encontrado no PDF."); return; }
+      processarAlunosPDF(data.alunos);
+    })
+    .catch(function(err) {
+      document.body.removeChild(loadDiv);
+      alert("Erro ao conectar com o servidor.\n\nVerifique sua conexão com a internet.\n\nDetalhes: " + err.message);
     });
+}
+
+function processarAlunosPDF(lista) {
+  var importados = 0;
+  var duplicados = 0;
+  var dataHoje = hj();
+  var unidade = usr.un || "Francisco Morato";
+  var veiPadrao = VH[unidade].carros[0];
+
+  function mapCat(cat) {
+    cat = (cat || "").trim().toUpperCase();
+    if (cat === "AB" || cat === "A/B") return "Primeira Habilitação A/B";
+    if (cat === "A") return "Primeira Habilitação A";
+    return "Primeira Habilitação B";
+  }
+
+  function placaParaVeiculo(placa, un) {
+    if (!placa) return veiPadrao;
+    var placaLimpa = placa.replace(/-/g,"").toUpperCase();
+    var todos = VH[un].carros.concat(VH[un].motos);
+    for (var i = 0; i < todos.length; i++) {
+      if (todos[i].p.replace(/-/g,"").toUpperCase() === placaLimpa) return todos[i];
+    }
+    return {p: placa.toUpperCase(), m: "Verificar"};
+  }
+
+  lista.forEach(function(a) {
+    if (a.cpf) {
+      for (var j = 0; j < alunos.length; j++) {
+        if (alunos[j].cpf === a.cpf) { duplicados++; return; }
+      }
+    }
+    alunos.push({
+      id: Date.now() + Math.random(),
+      nome: a.nome || "Aluno Importado",
+      cpf: a.cpf || "",
+      ldv: "",
+      cat: mapCat(a.cat),
+      un: unidade,
+      rst: "Sem restrições",
+      dt: dataHoje,
+      hr: a.hr || "08:00",
+      vei: placaParaVeiculo(a.placa, unidade),
+      obs: "Importado do PDF — complete os dados faltantes",
+      res: null, dtR: null, gr: null
+    });
+    importados++;
+  });
+
+  salvarNuvem();
+  renderExames();
+  updStats();
+
+  var msg = importados + " aluno(s) importado(s) com sucesso!";
+  if (duplicados > 0) msg += "\n" + duplicados + " já existiam.";
+  msg += "\n\nComplete CPF, LDV, horário e veículo usando ✏️ Editar.";
+  alert(msg);
+}
+  }).catch(function(err){
+    // Fallback: tentar ler diretamente
+    lerPDFDireto(file);
+  });
+}
+
+function lerPDFDireto(file) {
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var bytes = new Uint8Array(e.target.result);
+    // Decodificar como latin-1
+    var raw = "";
+    for (var i = 0; i < bytes.length; i++) {
+      raw += String.fromCharCode(bytes[i]);
+    }
+    // Extrair texto legível: sequências de chars ASCII imprimíveis com 3+ chars
+    var texto = "";
+    var atual = "";
+    for (var i = 0; i < raw.length; i++) {
+      var code = raw.charCodeAt(i);
+      if (code >= 32 && code <= 126) {
+        atual += raw[i];
+      } else if (code === 10 || code === 13) {
+        if (atual.length >= 3) texto += atual.trim() + "
+";
+        atual = "";
+      } else {
+        if (atual.length >= 3) texto += atual.trim() + " ";
+        atual = "";
+      }
+    }
+    if (atual.length >= 3) texto += atual.trim();
+
+    // Mostrar para debug
+    alert("Texto lido (início):
+" + texto.substring(0, 400));
+    processarTextoPDF(texto);
   };
   reader.readAsArrayBuffer(file);
 }
