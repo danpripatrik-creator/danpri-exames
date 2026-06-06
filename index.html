@@ -1116,6 +1116,7 @@ function importarPDF(input) {
       }
       Promise.all(promises).then(function(paginas) {
         var textoFinal = paginas.join("\n");
+        console.log("Páginas lidas:", paginas.length, "Texto total:", textoFinal.length);
         if (!textoFinal.trim()) {
           alert("PDF sem texto legível. Pode ser uma imagem escaneada.");
           return;
@@ -1227,6 +1228,12 @@ function lerPDFDireto(file) {
 }
 
 function processarTextoPDF(texto) {
+  // DEBUG: mostrar primeiros 300 chars do texto lido
+  console.log("=== TEXTO PDF ===", texto.substring(0, 500));
+  if (!texto || texto.trim().length < 10) {
+    alert("PDF.js leu o arquivo mas não encontrou texto.\nO PDF pode ser uma imagem escaneada.");
+    return;
+  }
   var importados = 0;
   var duplicados = 0;
   var dataHoje = hj();
