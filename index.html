@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>DanPri Exames</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <style>
 :root{
   --bg:#0a0e1a;--bg2:#0f1629;--bg3:#141c35;--bg4:#1a2340;
@@ -1078,50 +1078,47 @@ function importarPDF(input) {
   if (!file) return;
   input.value = "";
 
-  if (typeof pdfjsLib === "undefined") {
-    alert("Biblioteca PDF nao carregada. Verifique sua conexao com internet.");
-    return;
-  }
-
-  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js";
+  // Usar PDF.js com worker inline para evitar problemas de CORS
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
 
   var reader = new FileReader();
   reader.onerror = function() { alert("Erro ao ler o arquivo."); };
   reader.onload = function(e) {
-    var loadingTask = pdfjsLib.getDocument({data: new Uint8Array(e.target.result)});
-    loadingTask.promise.then(function(pdf) {
-      var paginasTexto = [];
+    var typedArray = new Uint8Array(e.target.result);
+    pdfjsLib.getDocument(typedArray).promise.then(function(pdf) {
       var totalPaginas = pdf.numPages;
-      var paginasLidas = 0;
+      var promises = [];
       for (var p = 1; p <= totalPaginas; p++) {
-        (function(numPag) {
-          pdf.getPage(numPag).then(function(page) {
-            page.getTextContent().then(function(content) {
-              var linhasPag = {};
-              content.items.forEach(function(item) {
-                var y = item.transform ? Math.round(item.transform[5]) : 0;
-                if (!linhasPag[y]) linhasPag[y] = [];
-                linhasPag[y].push({x: item.transform ? item.transform[4] : 0, str: item.str});
-              });
-              var ys = Object.keys(linhasPag).map(Number).sort(function(a,b){return b-a;});
-              var textoPag = "";
-              ys.forEach(function(y) {
-                var itens = linhasPag[y].sort(function(a,b){return a.x-b.x;});
-                textoPag += itens.map(function(it){return it.str;}).join(" ") + "\n";
-              });
-              paginasTexto[numPag] = textoPag;
-              paginasLidas++;
-              if (paginasLidas === totalPaginas) {
-                var textoFinal = "";
-                for (var i = 1; i <= totalPaginas; i++) textoFinal += (paginasTexto[i] || "");
-                processarTextoPDF(textoFinal);
-              }
-            }).catch(function(e){ alert("Erro pagina: "+e.message); });
-          }).catch(function(e){ alert("Erro get page: "+e.message); });
-        })(p);
+        promises.push(pdf.getPage(p).then(function(page) {
+          return page.getTextContent().then(function(content) {
+            // Agrupar itens por linha (coordenada Y)
+            var grupos = {};
+            content.items.forEach(function(item) {
+              var y = item.transform ? Math.round(item.transform[5]) : 0;
+              if (!grupos[y]) grupos[y] = [];
+              grupos[y].push({x: item.transform ? item.transform[4] : 0, str: item.str});
+            });
+            // Ordenar linhas de cima para baixo (Y decrescente)
+            var ys = Object.keys(grupos).map(Number).sort(function(a,b){ return b - a; });
+            var textoPagina = "";
+            ys.forEach(function(y) {
+              var itens = grupos[y].sort(function(a,b){ return a.x - b.x; });
+              textoPagina += itens.map(function(it){ return it.str; }).join(" ").trim() + "\n";
+            });
+            return textoPagina;
+          });
+        }));
       }
+      Promise.all(promises).then(function(paginas) {
+        var textoFinal = paginas.join("\n");
+        if (!textoFinal.trim()) {
+          alert("PDF sem texto legível. Pode ser uma imagem escaneada.");
+          return;
+        }
+        processarTextoPDF(textoFinal);
+      });
     }).catch(function(err) {
-      alert("Erro ao abrir PDF: " + err.message);
+      alert("Erro ao abrir PDF: " + err.message + "\n\nVerifique se o arquivo é um PDF válido.");
     });
   };
   reader.readAsArrayBuffer(file);
