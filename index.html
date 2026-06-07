@@ -1101,8 +1101,10 @@ function processarTextoPDF(texto) {
     importados++;
   }
 
-  // Normalizar texto — juntar tudo numa linha só para busca
-  var textoJunto = texto.replace(/\n/g, " ").replace(/\s{2,}/g, " ");
+  // Normalizar texto — remover espaços duplos e juntar linhas
+  // PDF.js às vezes coloca espaços extras entre palavras
+  var textoNorm = texto.replace(/[ \t]{2,}/g, " "); // normalizar espaços na mesma linha
+  var textoJunto = textoNorm.replace(/\n/g, " ").replace(/[ \t]{2,}/g, " "); // juntar tudo
   var linhas = texto.split("\n");
 
   var temCPF = /\d{3}\.\d{3}\.\d{3}-\d{2}/.test(texto);
@@ -1110,8 +1112,9 @@ function processarTextoPDF(texto) {
 
   if (temCPF && !temSP) {
     // Estratégia 1: linha a linha com número sequencial
-    for (var i=0;i<linhas.length;i++) {
-      var m=linhas[i].trim().match(/^(\d{1,2})\s+([A-Z][A-Z\s]{3,60})\s+(\d{3}\.\d{3}\.\d{3}-\d{2})\s+([AB\/]+)/);
+    var linhasNorm = textoNorm.split("\n");
+    for (var i=0;i<linhasNorm.length;i++) {
+      var m=linhasNorm[i].trim().match(/^(\d{1,2})\s+([A-Z][A-Z\s]{3,60})\s+(\d{3}\.\d{3}\.\d{3}-\d{2})\s+([AB\/]+)/);
       if(m) add(m[2].trim(),m[3].trim(),m[4],null,"08:00","Importado - complete LDV e veiculo");
     }
 
