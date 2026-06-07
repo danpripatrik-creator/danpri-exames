@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>DanPri Exames</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+<style>
+:root{
+  --bg:#0a0e1a;--bg2:#0f1629;--bg3:#141c35;--bg4:#1a2340;
+  --border:#1e2d4a;--border2:#253660;
+  --text:#e8eeff;--text2:#7a90c0;--text3:#3d5080;
+  --green:#00c96e;--green2:#00a558;--green-bg:rgba(0,201,110,.1);--green-border:rgba(0,201,110,.25);
+  --red:#ff4d6d;--red-bg:rgba(255,77,109,.1);--red-border:rgba(255,77,109,.25);
+  --yellow:#ffc93c;--yellow-bg:rgba(255,201,60,.1);--yellow-border:rgba(255,201,60,.25);
+  --gold:#c9a227;--gold2:#f5c400;
+  --sidebar:220px;
+  --radius:10px;--radius-lg:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif}
+input,select,textarea,button{font-family:inherit}
+body{background:var(--bg);color:var(--text);min-height:100vh}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* ── LOGIN ── */
+#pg-login{min-height:100vh;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;position:relative;overflow:hidden}
+#pg-login::before{content:'';position:absolute;width:500px;height:500px;background:radial-gradient(circle,rgba(0,201,110,.06),transparent 70%);top:-100px;left:50%;transform:translateX(-50%);pointer-events:none}
+.login-wrap{width:100%;max-width:440px;position:relative;z-index:1}
+.login-logo{text-align:center;margin-bottom:36px}
+.login-logo-inner{display:inline-flex;align-items:center;gap:16px}
+.diamonds{display:flex;flex-direction:column;align-items:center}
+.dm{transform:rotate(45deg);border-radius:3px;margin:-5px 0}
+.dm1{width:38px;height:38px;background:#3CB54A}
+.dm2{width:38px;height:38px;background:#F5A623}
+.dm3{width:38px;height:38px;background:#E03020}
+.logo-text-block{}
+.logo-name{font-family:'Arial Black',Impact,sans-serif;font-weight:900;font-size:46px;color:#fff;letter-spacing:-2px;line-height:1}
+.logo-bar{height:3px;background:linear-gradient(90deg,#E03020,#F5C400,#3CB54A);border-radius:2px;margin-top:5px}
+.logo-ae{font-size:10px;font-weight:700;letter-spacing:4px;color:var(--text2);text-transform:uppercase;margin-top:5px}
+.login-tagline{font-size:12px;color:var(--text3);margin-top:10px}
+
+.login-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.lc-top{padding:22px 26px 18px;border-bottom:1px solid var(--border)}
+.lc-top h2{font-size:16px;font-weight:600;color:var(--text)}
+.lc-top p{font-size:12px;color:var(--text3);margin-top:3px}
+.lc-body{padding:20px 26px 26px}
+
+.unit-btn{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;cursor:pointer;display:flex;align-items:center;gap:12px;margin-bottom:8px;text-align:left;transition:all .15s}
+.unit-btn:hover{border-color:var(--border2);background:var(--bg4)}
+.unit-icon{width:40px;height:40px;border-radius:var(--radius);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.ui-g{background:rgba(60,181,74,.15);border:1px solid rgba(60,181,74,.3)}
+.ui-a{background:rgba(245,166,35,.15);border:1px solid rgba(245,166,35,.3)}
+.ui-b{background:rgba(99,130,255,.15);border:1px solid rgba(99,130,255,.3)}
+.unit-label strong{font-size:13px;font-weight:600;color:var(--text);display:block}
+.unit-label small{font-size:11px;color:var(--text3);margin-top:2px;display:block}
+.unit-arrow{margin-left:auto;color:var(--text3);font-size:16px}
+.sep-line{height:1px;background:var(--border);margin:8px 0}
+
+.back-link{background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;padding:0;margin-bottom:16px;display:flex;align-items:center;gap:5px}
+.back-link:hover{color:var(--text2)}
+.sel-pill{background:var(--green-bg);border:1px solid var(--green-border);border-radius:var(--radius);padding:10px 14px;margin-bottom:18px}
+.sel-pill .sp-l{font-size:10px;color:var(--green);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.sel-pill .sp-v{font-size:13px;font-weight:600;color:var(--text);margin-top:3px}
+.f-label{display:block;font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:6px;margin-top:14px}
+.f-inp{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:11px 14px;color:var(--text);font-size:13px;outline:none;transition:border-color .2s}
+.f-inp:focus{border-color:var(--green2)}
+.btn-login{width:100%;background:var(--green2);border:none;border-radius:var(--radius);padding:13px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;margin-top:16px;transition:background .15s}
+.btn-login:hover{background:var(--green)}
+.err-txt{color:var(--red);font-size:12px;text-align:center;margin-top:10px;display:none}
+.cred-hint{margin-top:16px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:11px 14px}
+.cred-hint p{font-size:11px;color:var(--text3);margin-bottom:3px}
+.cred-hint p:last-child{margin:0}
+.cred-hint b{color:var(--text2)}
+
+/* ── APP ── */
+#pg-app{display:none;min-height:100vh}
+.app-wrap{display:flex;min-height:100vh}
+
+/* Sidebar */
+.sidebar{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+.sb-logo{padding:20px 16px 16px;border-bottom:1px solid var(--border)}
+.sb-logo-inner{display:flex;align-items:center;gap:8px}
+.sb-dm-wrap{display:flex;flex-direction:column;align-items:center}
+.sb-dm{transform:rotate(45deg);border-radius:2px;margin:-2px 0}
+.sb-dm1{width:14px;height:14px;background:#3CB54A}
+.sb-dm2{width:14px;height:14px;background:#F5A623}
+.sb-dm3{width:14px;height:14px;background:#E03020}
+.sb-logo-text .t{font-family:'Arial Black',Impact,sans-serif;font-weight:900;font-size:20px;color:var(--text);letter-spacing:-1px;line-height:1}
+.sb-logo-text .bar{height:2px;background:linear-gradient(90deg,#E03020,#F5C400,#3CB54A);border-radius:1px;margin-top:3px}
+.sb-logo-text .ae{font-size:8px;font-weight:600;letter-spacing:3px;color:var(--text3);text-transform:uppercase;margin-top:3px}
+.sb-unit-pill{margin-top:10px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:8px;padding:6px 10px}
+.sb-unit-pill .lbl{font-size:9px;color:var(--green);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.sb-unit-pill .val{font-size:11px;color:var(--text);font-weight:600;margin-top:2px}
+
+.sb-stats{padding:12px 14px;border-bottom:1px solid var(--border)}
+.sb-stats-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:8px}
+.sb-stats-row{display:flex;gap:6px}
+.sb-stat{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px;text-align:center}
+.sb-stat.green{background:var(--green-bg);border-color:var(--green-border)}
+.sb-stat .num{font-size:20px;font-weight:700;color:var(--text);line-height:1}
+.sb-stat.green .num{color:var(--green)}
+.sb-stat .lbl{font-size:9px;color:var(--text3);margin-top:2px}
+.sb-stat.green .lbl{color:var(--green2)}
+
+.sb-section{padding:10px 10px 4px;font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;font-weight:600}
+.sb-nav{padding:4px 8px 8px}
+.nav-btn{width:100%;background:none;border:1px solid transparent;border-radius:var(--radius);padding:10px 12px;color:var(--text3);font-size:12px;font-weight:500;cursor:pointer;text-align:left;display:flex;align-items:center;gap:9px;margin-bottom:2px;transition:all .15s}
+.nav-btn:hover{background:var(--bg3);color:var(--text2)}
+.nav-btn.active{background:var(--bg4);border-color:var(--border2);color:var(--gold2);font-weight:600}
+.nav-btn .ic{font-size:14px;opacity:.8}
+.nav-btn.active .ic{opacity:1}
+
+.sb-bottom{padding:12px 14px;border-top:1px solid var(--border);margin-top:auto}
+.user-row{display:flex;align-items:center;gap:9px}
+.user-av{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--green2),var(--gold));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0}
+.user-name{font-size:12px;font-weight:600;color:var(--text)}
+.user-role{font-size:10px;color:var(--text3);margin-top:1px}
+.btn-logout{background:none;border:none;color:var(--text3);font-size:15px;cursor:pointer;margin-left:auto;padding:3px;transition:color .15s}
+.btn-logout:hover{color:var(--red)}
+
+/* Main */
+.main-content{flex:1;display:flex;flex-direction:column;min-height:100vh;overflow:hidden}
+.topbar{height:56px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:16px;flex-shrink:0}
+.topbar-title{font-size:16px;font-weight:600;color:var(--text);flex:1}
+.topbar-sync{display:flex;align-items:center;gap:6px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:20px;padding:4px 12px;font-size:11px;color:var(--green);font-weight:500}
+.topbar-sync::before{content:'';width:6px;height:6px;background:var(--green);border-radius:50%;display:inline-block}
+.topbar-date{font-size:12px;color:var(--text3);background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:5px 14px}
+.page-area{flex:1;overflow-y:auto;padding:24px 28px}
+
+/* Cards de métrica */
+.metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px}
+.metric-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px}
+.metric-card .mc-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:8px}
+.metric-card .mc-val{font-size:28px;font-weight:800;color:var(--text);line-height:1}
+.metric-card .mc-sub{font-size:11px;color:var(--text3);margin-top:4px}
+
+/* Filtros */
+.filtros-bar{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;margin-bottom:18px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.fi{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:12px;outline:none;transition:border-color .2s;cursor:pointer}
+.fi:focus{border-color:var(--border2)}
+.fi-s{flex:1;min-width:160px}
+.fi-count{font-size:11px;color:var(--text3);flex-shrink:0;margin-left:4px}
+.btn-novo{background:var(--green2);border:none;border-radius:var(--radius);padding:9px 18px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px;flex-shrink:0;transition:background .15s}
+.btn-novo:hover{background:var(--green)}
+.btn-importar{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius);padding:9px 18px;color:var(--gold2);font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;transition:all .15s}
+.btn-importar:hover{background:var(--bg4);border-color:var(--gold2)}
+
+/* Cards aluno */
+.aluno-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;margin-bottom:12px;transition:border-color .15s}
+.aluno-card:hover{border-color:var(--border2)}
+.ac-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
+.ac-av{width:42px;height:42px;border-radius:11px;background:linear-gradient(135deg,rgba(0,201,110,.3),rgba(245,166,35,.2));border:1px solid rgba(0,201,110,.2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--green);flex-shrink:0}
+.ac-nome{font-size:15px;font-weight:600;color:var(--text);letter-spacing:-.2px}
+.ac-cpf{font-size:11px;color:var(--text3);margin-top:3px}
+.ac-hora{font-size:12px;color:var(--gold2);font-weight:600}
+.ac-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
+
+.ac-info-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;border-top:1px solid var(--border);padding-top:12px;margin-bottom:12px}
+.ai-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;font-weight:600;margin-bottom:3px}
+.ai-val{font-size:12px;color:var(--text2)}
+.ai-val.gold{color:var(--gold2);font-weight:600}
+
+.restr-box{border-radius:9px;padding:8px 12px;margin-bottom:12px;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:500}
+.r-ok{background:var(--green-bg);border:1px solid var(--green-border);color:var(--green)}
+.r-warn{background:var(--yellow-bg);border:1px solid var(--yellow-border);color:var(--yellow)}
+.r-danger{background:var(--red-bg);border:1px solid var(--red-border);color:var(--red)}
+
+.reg-info{border-top:1px solid var(--border);padding-top:8px;margin-bottom:10px;font-size:10px;color:var(--text3)}
+.reg-info b{color:var(--text2)}
+
+.result-btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px}
+.rb{border-radius:9px;padding:13px 4px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid;text-align:center;transition:all .2s;letter-spacing:.2px}
+.rb:hover{filter:brightness(1.15)}
+
+/* Badges */
+.badge{border-radius:20px;padding:4px 11px;font-size:10px;font-weight:600;white-space:nowrap}
+.b-pend{background:var(--bg3);color:var(--text3);border:1px solid var(--border)}
+.b-aprov{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)}
+.b-reprov{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border)}
+.b-faltou{background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-border)}
+.b-blue{background:rgba(99,130,255,.12);color:#8ca0ff;border:1px solid rgba(99,130,255,.25)}
+
+/* Dashboard gráfico */
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.chart-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px}
+.chart-card h3{font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px}
+.chart-wrap{position:relative;height:180px}
+.full-card{grid-column:1/-1}
+.unit-row-d{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border)}
+.unit-row-d:last-child{border-bottom:none}
+.unit-row-d .nm{font-size:12px;color:var(--text2);width:145px;flex-shrink:0}
+.bar-bg{flex:1;height:7px;border-radius:4px;background:var(--bg3);overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;background:var(--green2);transition:width .6s}
+.bar-pct{font-size:12px;font-weight:600;width:40px;text-align:right;flex-shrink:0}
+.dist-bar-lg{display:flex;height:16px;border-radius:8px;overflow:hidden;gap:2px;margin-bottom:10px}
+
+/* Histórico */
+.hist-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:13px 16px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:12px;transition:border-color .15s}
+.hist-card:hover{border-color:var(--border2)}
+.h-nome{font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px}
+.h-meta{font-size:11px;color:var(--text3)}
+
+/* Veículos */
+.vcard{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;margin-bottom:12px}
+.vcard-title{color:var(--gold2);font-size:14px;font-weight:600;margin-bottom:14px}
+.v-section-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:6px;margin-top:12px}
+.vrow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px}
+.vrow:last-child{border-bottom:none}
+.placa{color:var(--gold2);font-weight:700;font-family:monospace;letter-spacing:1.5px;font-size:11px}
+.btn-dv{background:none;border:none;color:var(--text3);cursor:pointer;padding:3px 7px;border-radius:6px;font-size:13px;transition:all .15s}
+.btn-dv:hover{background:var(--red-bg);color:var(--red)}
+.add-vei{display:flex;gap:7px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);flex-wrap:wrap}
+.btn-add{background:var(--green2);border:none;border-radius:8px;padding:8px 14px;color:#fff;font-size:11px;font-weight:600;cursor:pointer;flex-shrink:0}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:999;padding:16px;backdrop-filter:blur(4px)}
+.modal-box{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:26px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto}
+.modal-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
+.modal-title{font-size:16px;font-weight:600;color:var(--text)}
+.modal-x{background:none;border:none;color:var(--text3);font-size:22px;cursor:pointer;padding:2px;line-height:1;transition:color .15s}
+.modal-x:hover{color:var(--text)}
+.form-grid{display:grid;gap:12px}
+.form-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.modal-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:22px}
+.btn-cancel{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:11px;color:var(--text2);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s}
+.btn-cancel:hover{border-color:var(--border2)}
+.btn-save{background:var(--green2);border:none;border-radius:var(--radius);padding:11px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s}
+.btn-save:hover{background:var(--green)}
+
+/* Del aluno */
+.btn-del-al{background:none;border:1px solid var(--red-border);border-radius:7px;padding:5px 10px;color:var(--red);font-size:11px;cursor:pointer;margin-top:4px;transition:all .15s}
+.btn-del-al:hover{background:var(--red-bg)}
+.btn-edit-al{background:none;border:1px solid var(--border2);border-radius:7px;padding:5px 10px;color:var(--gold2);font-size:11px;cursor:pointer;margin-top:4px;transition:all .15s}
+.btn-edit-al:hover{background:rgba(197,162,39,.1)}
+
+/* Empty */
+.empty-state{text-align:center;padding:60px 0;color:var(--text3)}
+.empty-state .ei{font-size:40px;margin-bottom:12px}
+.empty-state .et{font-size:14px;color:var(--text2);font-weight:500;margin-bottom:4px}
+
+/* Search */
+.search-inp{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;color:var(--text);font-size:13px;outline:none;margin-bottom:16px;transition:border-color .2s}
+.search-inp:focus{border-color:var(--border2)}
+
+/* Responsive */
+@media(max-width:768px){
+  .sidebar{width:0;overflow:hidden;position:fixed;z-index:100;transition:width .2s}
+  .sidebar.open{width:var(--sidebar)}
+  .ac-info-grid{grid-template-columns:1fr 1fr}
+  .dash-grid{grid-template-columns:1fr}
+  .metrics-grid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════ LOGIN ══════ -->
+<div id="pg-login">
+  <div class="login-wrap">
+    <div class="login-logo">
+      <div class="login-logo-inner">
+        <div class="diamonds">
+          <div class="dm dm1"></div>
+          <div class="dm dm2"></div>
+          <div class="dm dm3"></div>
+        </div>
+        <div class="logo-text-block">
+          <div class="logo-name">DanPri</div>
+          <div class="logo-bar"></div>
+          <div class="logo-ae">Auto Escola</div>
+        </div>
+      </div>
+      <div class="login-tagline">Sistema de Gestão de Exames Práticos DETRAN</div>
+    </div>
+
+    <div class="login-card">
+      <div class="lc-top">
+        <h2 id="lc-h">Selecione sua unidade</h2>
+        <p id="lc-p">Para continuar, escolha o acesso</p>
+      </div>
+      <div class="lc-body">
+        <div id="e1">
+          <button class="unit-btn" onclick="pick('Francisco Morato')">
+            <div class="unit-icon ui-g">🏫</div>
+            <div class="unit-label"><strong>DanPri Francisco Morato</strong><small>Unidade 2 — Acesso restrito</small></div>
+            <span class="unit-arrow">›</span>
+          </button>
+          <button class="unit-btn" onclick="pick('Franco da Rocha')">
+            <div class="unit-icon ui-a">🏫</div>
+            <div class="unit-label"><strong>DanPri Franco da Rocha</strong><small>Unidade 1 — Acesso restrito</small></div>
+            <span class="unit-arrow">›</span>
+          </button>
+          <div class="sep-line"></div>
+          <button class="unit-btn" onclick="pick('Administrador')">
+            <div class="unit-icon ui-b">⚙️</div>
+            <div class="unit-label"><strong>Administrador</strong><small>Acesso completo ao sistema</small></div>
+            <span class="unit-arrow">›</span>
+          </button>
+        </div>
+        <div id="e2" style="display:none">
+          <button class="back-link" onclick="back()">← Voltar</button>
+          <div class="sel-pill"><div class="sp-l">Acessando</div><div class="sp-v" id="e2nm"></div></div>
+          <label class="f-label">Login</label>
+          <input class="f-inp" id="il" type="text" placeholder="Usuário" onkeydown="if(event.key==='Enter')go()"/>
+          <label class="f-label">Senha</label>
+          <input class="f-inp" id="is" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')go()"/>
+          <div class="err-txt" id="le">Login ou senha incorretos.</div>
+          <button class="btn-login" onclick="go()">Entrar no sistema</button>
+          <div class="cred-hint">
+            <p>Admin → <b>dan</b> / <b>dan</b></p>
+            <p>Morato → <b>morato</b> / <b>dan</b></p>
+            <p>Franco → <b>franco</b> / <b>dan</b></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ APP ══════ -->
+<div id="pg-app">
+  <div class="app-wrap">
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+      <div class="sb-logo">
+        <div class="sb-logo-inner">
+          <div class="sb-dm-wrap">
+            <div class="sb-dm sb-dm1"></div>
+            <div class="sb-dm sb-dm2"></div>
+            <div class="sb-dm sb-dm3"></div>
+          </div>
+          <div class="sb-logo-text">
+            <div class="t">DanPri</div>
+            <div class="bar"></div>
+            <div class="ae">Auto Escola</div>
+          </div>
+        </div>
+        <div id="sb-unit-pill" class="sb-unit-pill" style="display:none">
+          <div class="lbl">Unidade</div>
+          <div class="val" id="sb-unit-val"></div>
+        </div>
+      </div>
+
+      <div class="sb-stats">
+        <div class="sb-stats-lbl">Hoje</div>
+        <div class="sb-stats-row">
+          <div class="sb-stat"><div class="num" id="st-tot">0</div><div class="lbl">Alunos</div></div>
+          <div class="sb-stat green"><div class="num" id="st-aprov">0</div><div class="lbl">Aprov.</div></div>
+        </div>
+      </div>
+
+      <div class="sb-section">Principal</div>
+      <div class="sb-nav">
+        <button class="nav-btn active" onclick="mudarAba('exames',this)"><span class="ic">📋</span> Exames do Dia</button>
+        <button class="nav-btn" onclick="mudarAba('dashboard',this)"><span class="ic">📊</span> Dashboard</button>
+        <button class="nav-btn" onclick="mudarAba('historico',this)"><span class="ic">📂</span> Histórico</button>
+        <button class="nav-btn" onclick="mudarAba('veiculos',this)"><span class="ic">🚗</span> Veículos</button>
+      </div>
+
+      <div class="sb-bottom">
+        <div class="user-row">
+          <div class="user-av" id="u-av">AD</div>
+          <div><div class="user-name" id="u-nm">Admin</div><div class="user-role" id="u-rl">Admin</div></div>
+          <button class="btn-logout" onclick="logout()" title="Sair">⎋</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main -->
+    <div class="main-content">
+      <div class="topbar">
+        <div class="topbar-title" id="topbar-title">Exames do Dia</div>
+        <div class="topbar-sync">nuvem sincronizada</div>
+        <div class="topbar-date" id="topbar-date"></div>
+      </div>
+      <div class="page-area">
+        <div id="tab-exames"></div>
+        <div id="tab-dashboard" style="display:none"></div>
+        <div id="tab-historico" style="display:none"></div>
+        <div id="tab-veiculos" style="display:none"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal" style="display:none">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <span class="modal-title">Cadastrar Aluno</span>
+      <button class="modal-x" onclick="fecharModal()">×</button>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+// ── Dados ──────────────────────────────────────────────────────────────────
+var VH = {
+  "Francisco Morato": {
+    carros: [{p:"ERR8353",m:"Kwid"},{p:"EZN7H16",m:"Kwid"},{p:"FQY1012",m:"Celta"},{p:"STK1G29",m:"Kwid"}],
+    motos:  [{p:"GFY2B66",m:"Factor"},{p:"STE1F37",m:"Factor"},{p:"SVS9F46",m:"Factor"}]
+  },
+  "Franco da Rocha": {
+    carros: [{p:"FIN2C86",m:"Kwid"},{p:"FWC8816",m:"Celta"},{p:"STM4I58",m:"Kwid"},{p:"SVG0I08",m:"Kwid"}],
+    motos:  [{p:"GGN8E65",m:"Factor"},{p:"FCX2B93",m:"Honda Fan"}]
+  }
+};
+var USERS = [
+  {id:1,nome:"Admin DanPri",login:"dan",senha:"dan",perfil:"Admin",un:null},
+  {id:2,nome:"Gerente Morato",login:"morato",senha:"dan",perfil:"Gerente",un:"Francisco Morato"},
+  {id:3,nome:"Gerente Franco",login:"franco",senha:"dan",perfil:"Gerente",un:"Franco da Rocha"}
+];
+var CATS = ["Primeira Habilitação A","Primeira Habilitação B","Primeira Habilitação A/B","Adição de Categoria A","Adição de Categoria B"];
+var RESTRS = ["Sem restrições","Uso obrigatório de óculos","Deficiência auditiva","Deficiência física","Veículo adaptado","Outras observações"];
+
+function hj(){ return new Date().toISOString().split("T")[0]; }
+function fD(d){ return d ? new Date(d).toLocaleDateString("pt-BR") : "—"; }
+function fT(d){ return d ? new Date(d).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}) : "—"; }
+function ini(n){ return n.split(" ").slice(0,2).map(function(x){return x[0]}).join(""); }
+
+var alunos = [
+  {id:1,nome:"João da Silva",cpf:"123.456.789-00",cat:"Adição de Categoria B",un:"Francisco Morato",ldv:"987654321",rst:"Uso obrigatório de óculos",dt:hj(),hr:"08:30",vei:{p:"ERR8353",m:"Kwid"},obs:"",res:null,dtR:null,gr:null},
+  {id:2,nome:"Maria Souza",cpf:"987.654.321-00",cat:"Primeira Habilitação B",un:"Francisco Morato",ldv:"123456789",rst:"Sem restrições",dt:hj(),hr:"09:00",vei:{p:"EZN7H16",m:"Kwid"},obs:"Candidata nervosa",res:"aprovado",dtR:new Date().toISOString(),gr:"Admin DanPri"},
+  {id:3,nome:"Carlos Oliveira",cpf:"456.789.123-00",cat:"Primeira Habilitação A",un:"Franco da Rocha",ldv:"654321987",rst:"Deficiência física",dt:hj(),hr:"10:00",vei:{p:"GGN8E65",m:"Factor"},obs:"",res:"reprovado",dtR:new Date().toISOString(),gr:"Admin DanPri"},
+  {id:4,nome:"Ana Lima",cpf:"321.654.987-00",cat:"Adição de Categoria A",un:"Franco da Rocha",ldv:"789123456",rst:"Sem restrições",dt:hj(),hr:"11:00",vei:{p:"FCX2B93",m:"Honda Fan"},obs:"",res:null,dtR:null,gr:null},
+  {id:5,nome:"Pedro Santos",cpf:"111.222.333-44",cat:"Primeira Habilitação A/B",un:"Francisco Morato",ldv:"111222333",rst:"Sem restrições",dt:hj(),hr:"14:00",vei:{p:"GFY2B66",m:"Factor"},obs:"",res:"faltou",dtR:new Date().toISOString(),gr:"Admin DanPri"}
+];
+var usr = null, selU = "", abaAtual = "exames", alunoEditandoId = null;
+var chartAprov = null, chartCat = null;
+
+// ── Login ──────────────────────────────────────────────────────────────────
+function pick(u) {
+  selU = u;
+  document.getElementById("e1").style.display = "none";
+  document.getElementById("e2").style.display = "";
+  document.getElementById("e2nm").textContent = u === "Administrador" ? "Administrador — Acesso Completo" : "DanPri " + u;
+  document.getElementById("lc-h").textContent = "Credenciais de acesso";
+  document.getElementById("lc-p").textContent = "Informe seus dados para entrar";
+  document.getElementById("il").value = "";
+  document.getElementById("is").value = "";
+  document.getElementById("le").style.display = "none";
+  setTimeout(function(){ document.getElementById("il").focus(); }, 80);
+}
+function back() {
+  document.getElementById("e1").style.display = "";
+  document.getElementById("e2").style.display = "none";
+  document.getElementById("lc-h").textContent = "Selecione sua unidade";
+  document.getElementById("lc-p").textContent = "Para continuar, escolha o acesso";
+}
+function go() {
+  var l = document.getElementById("il").value.trim().toLowerCase();
+  var s = document.getElementById("is").value;
+  var u = null;
+  for (var i = 0; i < USERS.length; i++) {
+    var cu = USERS[i];
+    if (cu.login === l && cu.senha === s) {
+      if (selU === "Administrador" && cu.perfil === "Admin") { u = cu; break; }
+      if (selU !== "Administrador" && (cu.un === selU || cu.perfil === "Admin")) { u = cu; break; }
+    }
+  }
+  if (!u) { document.getElementById("le").style.display = "block"; return; }
+  usr = u;
+  document.getElementById("pg-login").style.display = "none";
+  document.getElementById("pg-app").style.display = "block";
+  initApp();
+}
+function logout() {
+  usr = null;
+  document.getElementById("pg-app").style.display = "none";
+  document.getElementById("pg-login").style.display = "flex";
+  back();
+}
+
+// ── App ────────────────────────────────────────────────────────────────────
+function initApp() {
+  document.getElementById("u-nm").textContent = usr.nome;
+  document.getElementById("u-rl").textContent = usr.perfil;
+  document.getElementById("u-av").textContent = ini(usr.nome);
+  var pill = document.getElementById("sb-unit-pill");
+  if (usr.un) { pill.style.display = ""; document.getElementById("sb-unit-val").textContent = usr.un; }
+  else pill.style.display = "none";
+  var dn = new Date().toLocaleDateString("pt-BR", {weekday:"long",day:"numeric",month:"long",year:"numeric"});
+  document.getElementById("topbar-date").textContent = dn;
+  carregarVeiculosNuvem();
+  carregarNuvem();
+  updStats();
+  mudarAba("exames", document.querySelector(".nav-btn"));
+}
+
+function alunosVisiveis() {
+  return alunos.filter(function(a){ return !usr || !usr.un || a.un === usr.un; });
+}
+function hojeLista() {
+  return alunosVisiveis().filter(function(a){ return a.dt === hj(); });
+}
+function updStats() {
+  var d = hojeLista();
+  document.getElementById("st-tot").textContent = d.length;
+  document.getElementById("st-aprov").textContent = d.filter(function(a){ return a.res === "aprovado"; }).length;
+}
+
+function mudarAba(id, btn) {
+  abaAtual = id;
+  document.querySelectorAll(".nav-btn").forEach(function(b){ b.classList.remove("active"); });
+  if (btn) btn.classList.add("active");
+  ["exames","dashboard","historico","veiculos"].forEach(function(t){
+    document.getElementById("tab-"+t).style.display = t === id ? "" : "none";
+  });
+  var titles = {exames:"Exames do Dia", dashboard:"Dashboard", historico:"Histórico", veiculos:"Veículos"};
+  document.getElementById("topbar-title").textContent = titles[id];
+  if (id === "exames")    renderExames();
+  if (id === "dashboard") renderDash();
+  if (id === "historico") renderHist();
+  if (id === "veiculos")  renderVei();
+}
+
+// ── Badges ─────────────────────────────────────────────────────────────────
+function bdg(r) {
+  if (!r)              return '<span class="badge b-pend">● Pendente</span>';
+  if (r === "aprovado") return '<span class="badge b-aprov">✓ Aprovado</span>';
+  if (r === "reprovado")return '<span class="badge b-reprov">✗ Reprovado</span>';
+  return '<span class="badge b-faltou">⚠ Faltou</span>';
+}
+function rstrCls(r) {
+  if (r === "Sem restrições") return {c:"r-ok",i:"✓"};
+  if (r.includes("Deficiência") || r === "Veículo adaptado") return {c:"r-danger",i:"⚠"};
+  return {c:"r-warn",i:"⚠"};
+}
+
+// ── Filtrar ────────────────────────────────────────────────────────────────
+function filtrados() {
+  var b  = (document.getElementById("f-busca") || {value:""}).value.toLowerCase();
+  var dt = (document.getElementById("f-data")  || {value:""}).value;
+  var un = (document.getElementById("f-unid")  || {value:""}).value;
+  var r  = (document.getElementById("f-res")   || {value:""}).value;
+  return alunosVisiveis().filter(function(a) {
+    if (b && !a.nome.toLowerCase().includes(b) && !a.cpf.includes(b) && !a.vei.p.includes(b.toUpperCase())) return false;
+    if (dt && a.dt !== dt) return false;
+    if (un && a.un !== un) return false;
+    if (r === "pendente" && a.res !== null) return false;
+    if (r && r !== "pendente" && a.res !== r) return false;
+    return true;
+  });
+}
+
+// ── Render Exames ──────────────────────────────────────────────────────────
+var BTNS_DEF = [
+  {r:"aprovado", lb:"✅ Aprovado",  tc:"#00c96e", bg:"rgba(0,100,50,.35)",  bc:"#00c96e"},
+  {r:"reprovado",lb:"❌ Reprovado", tc:"#ff4d6d", bg:"rgba(120,20,40,.45)", bc:"#cc2244"},
+  {r:"faltou",   lb:"⚠️ Faltou",   tc:"#ffc93c", bg:"rgba(30,28,20,.6)",   bc:"#7a6010"}
+];
+function mkBtn(b, aId, aRes) {
+  var at = aRes === b.r;
+  var bg = b.bg;
+  var bc = b.bc;
+  var tc = b.tc;
+  var extraStyle = at ? "box-shadow:inset 0 0 0 1px " + bc + ";" : "";
+  return '<button class="rb" onclick="setRes(' + aId + ',\'' + b.r + '\')" style="background:' + bg + ';color:' + tc + ';border-color:' + bc + ';' + extraStyle + '">' + b.lb + '</button>';
+}
+
+function renderExames() {
+  var isAdmin = usr && usr.perfil === "Admin";
+  var filtBar = '<div class="filtros-bar">'
+    + '<input class="fi fi-s" id="f-busca" placeholder="🔍 Buscar aluno, CPF ou placa..." oninput="renderExames()"/>'
+    + '<input class="fi" type="date" id="f-data" value="' + hj() + '" onchange="renderExames()"/>'
+    + (isAdmin ? '<select class="fi" id="f-unid" onchange="renderExames()"><option value="">Todas as unidades</option><option>Francisco Morato</option><option>Franco da Rocha</option></select>' : '<input id="f-unid" type="hidden" value=""/>')
+    + '<select class="fi" id="f-res" onchange="renderExames()"><option value="">Todos</option><option value="pendente">Pendente</option><option value="aprovado">Aprovado</option><option value="reprovado">Reprovado</option><option value="faltou">Faltou</option></select>'
+    + '<span class="fi-count" id="f-count">0</span>'
+    + '<button class="btn-novo" onclick="abrirModal()">＋ Novo Aluno</button><button class="btn-importar" onclick="document.getElementById(\'inp-pdf\').click()">📄 Importar PDF</button><input type="file" id="inp-pdf" accept=".pdf" style="display:none" onchange="importarPDF(this)"/>' +
+     +'</div>';
+
+  var lista = filtrados();
+  document.getElementById("f-count") && (document.getElementById("f-count").textContent = lista.length + " aluno(s)");
+
+  if (!lista.length) {
+    document.getElementById("tab-exames").innerHTML = filtBar + '<div class="empty-state"><div class="ei">📋</div><div class="et">Nenhum aluno encontrado</div><div>Ajuste os filtros ou cadastre um novo aluno.</div></div>';
+    return;
+  }
+
+  var html = filtBar;
+  for (var i = 0; i < lista.length; i++) {
+    var a = lista[i], rs = rstrCls(a.rst);
+    html += '<div class="aluno-card">';
+    html += '<div class="ac-top">';
+    html += '<div style="display:flex;align-items:center;gap:12px"><div class="ac-av">' + ini(a.nome) + '</div>';
+    html += '<div><div class="ac-nome">' + a.nome + '</div><div class="ac-cpf">CPF: ' + a.cpf + '</div></div></div>';
+    html += '<div class="ac-right">' + bdg(a.res) + '<div class="ac-hora">⏰ ' + a.hr + '</div>';
+    html += '<button class="btn-del-al" onclick="excluirAluno(' + a.id + ')">🗑 Excluir</button>';
+    html += '<button class="btn-edit-al" onclick="abrirModalEdicao(' + a.id + ')">✏️ Editar</button>';
+    html += '</div>';
+    html += '</div>';
+    html += '<div class="ac-info-grid">';
+    html += '<div><div class="ai-lbl">Categoria</div><div class="ai-val">' + a.cat + '</div></div>';
+    html += '<div><div class="ai-lbl">Unidade</div><div class="ai-val">' + a.un + '</div></div>';
+    html += '<div><div class="ai-lbl">Veículo</div><div class="ai-val gold">' + a.vei.p + ' — ' + a.vei.m + '</div></div>';
+    html += '<div><div class="ai-lbl">Nº LDV</div><div class="ai-val">' + a.ldv + '</div></div>';
+    html += '</div>';
+    html += '<div class="restr-box ' + rs.c + '">' + rs.i + ' ' + a.rst + '</div>';
+    if (a.obs) html += '<div class="reg-info">Obs: ' + a.obs + '</div>';
+    if (a.res) html += '<div class="reg-info">Registrado em ' + fD(a.dtR) + ' às ' + fT(a.dtR) + ' por <b>' + a.gr + '</b></div>';
+    html += '<div class="result-btns">' + mkBtn(BTNS_DEF[0],a.id,a.res) + mkBtn(BTNS_DEF[1],a.id,a.res) + mkBtn(BTNS_DEF[2],a.id,a.res) + '</div>';
+    html += '</div>';
+  }
+  document.getElementById("tab-exames").innerHTML = html;
+  // atualizar contagem
+  var fc = document.getElementById("f-count");
+  if (fc) fc.textContent = lista.length + " aluno(s)";
+}
+
+function setRes(id, r) {
+  for (var i = 0; i < alunos.length; i++) {
+    if (String(alunos[i].id) === String(id)) {
+      alunos[i].res = r;
+      alunos[i].dtR = new Date().toISOString();
+      alunos[i].gr  = usr.nome;
+      break;
+    }
+  }
+  salvarNuvem();
+  renderExames();
+  updStats();
+}
+
+function excluirAluno(id) {
+  if (!confirm("Tem certeza que deseja excluir este aluno?")) return;
+  var novos = [];
+  for (var i = 0; i < alunos.length; i++) {
+    if (alunos[i].id !== id) novos.push(alunos[i]);
+  }
+  alunos = novos;
+  salvarNuvem();
+  renderExames();
+  updStats();
+}
+
+// ── Dashboard ──────────────────────────────────────────────────────────────
+function renderDash() {
+  var lista = alunosVisiveis();
+  var tot = lista.length;
+  var ap  = lista.filter(function(a){ return a.res==="aprovado"; }).length;
+  var rp  = lista.filter(function(a){ return a.res==="reprovado"; }).length;
+  var ft  = lista.filter(function(a){ return a.res==="faltou"; }).length;
+  var pd  = lista.filter(function(a){ return !a.res; }).length;
+  var tx  = tot ? Math.round(ap/tot*100) : 0;
+  var txC = tx>=70?"#00c96e":tx>=50?"#ffc93c":"#ff4d6d";
+
+  var units = ["Francisco Morato","Franco da Rocha"].map(function(u){
+    var ua = lista.filter(function(a){ return a.un===u; });
+    var uap = ua.filter(function(a){ return a.res==="aprovado"; }).length;
+    return {n:u, t:ua.length, a:uap, tx:ua.length?Math.round(uap/ua.length*100):0};
+  });
+  var cats = CATS.map(function(c){ return {c:c, t:lista.filter(function(a){ return a.cat===c; }).length}; }).filter(function(c){ return c.t>0; });
+
+  var bs = "";
+  if(ap>0) bs+='<div style="flex:'+ap+';background:#00a558"></div>';
+  if(rp>0) bs+='<div style="flex:'+rp+';background:#cc2244"></div>';
+  if(ft>0) bs+='<div style="flex:'+ft+';background:#cc9900"></div>';
+  if(pd>0) bs+='<div style="flex:'+pd+';background:#1a2340"></div>';
+
+  var h = '<div class="metrics-grid">';
+  [[tot,"Total de Alunos","#e8eeff"],[ap,"Aprovados","#00c96e"],[rp,"Reprovados","#ff4d6d"],[ft,"Faltaram","#ffc93c"],[pd,"Pendentes","#7a90c0"],[tx+"%","Taxa Aprovação",txC]].forEach(function(m){
+    h += '<div class="metric-card"><div class="mc-lbl">'+m[1]+'</div><div class="mc-val" style="color:'+m[2]+'">'+m[0]+'</div></div>';
+  });
+  h += '</div>';
+
+  if(tot>0){
+    h += '<div class="chart-card" style="margin-bottom:16px"><h3>Distribuição de Resultados</h3><div class="dist-bar-lg">'+bs+'</div>';
+    h += '<div style="display:flex;gap:16px;flex-wrap:wrap">';
+    [["#00a558","Aprovados"],["#cc2244","Reprovados"],["#cc9900","Faltaram"],["#1a2340","Pendentes"]].forEach(function(x){
+      h += '<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#7a90c0"><div style="width:8px;height:8px;border-radius:2px;background:'+x[0]+'"></div>'+x[1]+'</div>';
+    });
+    h += '</div></div>';
+  }
+
+  h += '<div class="dash-grid">';
+  h += '<div class="chart-card"><h3>Desempenho por Unidade</h3>';
+  units.forEach(function(u){
+    h += '<div class="unit-row-d"><div class="nm">'+u.n+'</div><div class="bar-bg"><div class="bar-fill" style="width:'+u.tx+'%"></div></div><div class="bar-pct" style="color:'+(u.tx>=70?"#00c96e":"#ffc93c")+'">'+u.tx+'%</div></div>';
+  });
+  h += '</div>';
+  h += '<div class="chart-card"><h3>Por Categoria</h3>';
+  if(cats.length){
+    cats.forEach(function(c){
+      h += '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #1e2d4a;font-size:12px;color:#7a90c0"><span>'+c.c+'</span><span class="badge b-blue">'+c.t+'</span></div>';
+    });
+  } else {
+    h += '<p style="color:#3d5080;font-size:12px">Nenhum dado.</p>';
+  }
+  h += '</div></div>';
+
+  document.getElementById("tab-dashboard").innerHTML = h;
+}
+
+// ── Histórico ──────────────────────────────────────────────────────────────
+function renderHist() {
+  var el = document.getElementById("tab-historico");
+  el.innerHTML = '<h2 style="font-size:18px;font-weight:700;color:#e8eeff;margin-bottom:18px">Histórico de Resultados</h2>'
+    + '<input class="search-inp" id="h-busca" placeholder="🔍 Buscar por nome, CPF ou placa..." oninput="filtHist()"/>'
+    + '<div id="h-lista"></div>';
+  filtHist();
+}
+function filtHist() {
+  var b = (document.getElementById("h-busca")||{value:""}).value.toLowerCase();
+  var lista = alunosVisiveis().filter(function(a){ return a.res; })
+    .filter(function(a){ return !b||a.nome.toLowerCase().includes(b)||a.cpf.includes(b)||a.vei.p.includes(b.toUpperCase()); });
+  var el = document.getElementById("h-lista"); if(!el) return;
+  if(!lista.length){ el.innerHTML='<div class="empty-state"><div class="ei">📂</div><div class="et">Nenhum resultado registrado</div></div>'; return; }
+  var h = "";
+  lista.forEach(function(a){
+    h += '<div class="hist-card"><div><div class="h-nome">'+a.nome+'</div><div class="h-meta">'+a.un+' · '+a.cat+' · '+a.vei.p+' · '+fD(a.dtR)+' às '+fT(a.dtR)+'</div></div>'+bdg(a.res)+'</div>';
+  });
+  el.innerHTML = h;
+}
+
+// ── Veículos ───────────────────────────────────────────────────────────────
+function renderVei() {
+  var uns = ["Francisco Morato","Franco da Rocha"];
+  var h = '<h2 style="font-size:18px;font-weight:700;color:#e8eeff;margin-bottom:18px">Frota por Unidade</h2>';
+  uns.forEach(function(u, ui){
+    h += '<div class="vcard"><div class="vcard-title">🏫 DanPri '+u+'</div>';
+    h += '<div class="v-section-lbl">Carros</div>';
+    VH[u].carros.forEach(function(v,j){
+      h += '<div class="vrow"><span class="placa">'+v.p+'</span><span style="color:#7a90c0">'+v.m+'</span><button class="btn-dv" onclick="delVei(\''+u+'\',\'carro\','+j+')">🗑</button></div>';
+    });
+    h += '<div class="v-section-lbl">Motos</div>';
+    VH[u].motos.forEach(function(v,j){
+      h += '<div class="vrow"><span class="placa">'+v.p+'</span><span style="color:#7a90c0">'+v.m+'</span><button class="btn-dv" onclick="delVei(\''+u+'\',\'moto\','+j+')">🗑</button></div>';
+    });
+    h += '<div class="add-vei">';
+    h += '<select class="fi" id="tp'+ui+'" style="flex:0 0 80px"><option value="carro">Carro</option><option value="moto">Moto</option></select>';
+    h += '<input class="fi fi-s" id="pl'+ui+'" placeholder="Placa (ex: ABC1234)"/>';
+    h += '<input class="fi fi-s" id="mo'+ui+'" placeholder="Modelo (ex: Kwid)"/>';
+    h += '<button class="btn-add" onclick="addVei(\''+u+'\','+ui+')">+ Adicionar</button>';
+    h += '</div></div>';
+  });
+  document.getElementById("tab-veiculos").innerHTML = h;
+}
+function delVei(u,t,i){
+  if(!confirm("Excluir este veículo?"))return;
+  (t==="carro"?VH[u].carros:VH[u].motos).splice(i,1);
+  salvarVeiculosNuvem();
+  renderVei();
+}
+function addVei(u,i){
+  var tp=document.getElementById("tp"+i).value;
+  var pl=document.getElementById("pl"+i).value.trim().toUpperCase();
+  var mo=document.getElementById("mo"+i).value.trim();
+  if(!pl||!mo){alert("Preencha placa e modelo.");return;}
+  (tp==="carro"?VH[u].carros:VH[u].motos).push({p:pl,m:mo});
+  salvarVeiculosNuvem();
+  renderVei();
+}
+
+// ── Modal Cadastro ─────────────────────────────────────────────────────────
+function abrirModal() {
+  var uf = usr.un;
+  var uSel = uf || "Francisco Morato";
+  function vOpts(u){
+    var o = "";
+    VH[u].carros.forEach(function(v){ o+='<option value="'+v.p+'|'+v.m+'">'+v.p+' — '+v.m+'</option>'; });
+    VH[u].motos.forEach(function(v){  o+='<option value="'+v.p+'|'+v.m+'">'+v.p+' — '+v.m+'</option>'; });
+    return o;
+  }
+  var uField = uf
+    ? '<input class="f-inp" value="'+uf+'" readonly style="opacity:.6"/>'
+    : '<select class="f-inp" id="m-un" onchange="atualizarVeiculosModal()"><option>Francisco Morato</option><option>Franco da Rocha</option></select>';
+
+  document.getElementById("modal-body").innerHTML =
+    '<div class="form-grid">'
+    + '<div><label class="f-label">Nome completo *</label><input class="f-inp" id="m-nome" placeholder="Nome completo"/></div>'
+    + '<div class="form-row2"><div><label class="f-label">CPF *</label><input class="f-inp" id="m-cpf" placeholder="000.000.000-00"/></div><div><label class="f-label">Nº LDV *</label><input class="f-inp" id="m-ldv" placeholder="000000000"/></div></div>'
+    + '<div class="form-row2"><div><label class="f-label">Data do exame</label><input class="f-inp" type="date" id="m-dt" value="'+hj()+'"/></div><div><label class="f-label">Horário</label><input class="f-inp" type="time" id="m-hr" value="08:00"/></div></div>'
+    + '<div><label class="f-label">Categoria</label><select class="f-inp" id="m-cat">'+ CATS.map(function(c){return'<option>'+c+'</option>';}).join('') +'</select></div>'
+    + '<div><label class="f-label">Unidade</label>'+uField+'</div>'
+    + '<div><label class="f-label">Veículo</label><select class="f-inp" id="m-vei">'+vOpts(uSel)+'</select></div>'
+    + '<div><label class="f-label">Restrição da LDV</label><select class="f-inp" id="m-rst">'+ RESTRS.map(function(r){return'<option>'+r+'</option>';}).join('') +'</select></div>'
+    + '<div><label class="f-label">Observações</label><textarea class="f-inp" id="m-obs" rows="2" style="resize:vertical" placeholder="Informações adicionais..."></textarea></div>'
+    + '</div>'
+    + '<div class="modal-btns"><button class="btn-cancel" onclick="fecharModal()">Cancelar</button><button class="btn-save" onclick="salvarAluno()">Salvar Aluno</button></div>';
+
+  document.getElementById("modal").style.display = "flex";
+}
+function atualizarVeiculosModal(){
+  var mu = document.getElementById("m-un"); if(!mu) return;
+  var u = mu.value, fv = document.getElementById("m-vei"); if(!fv) return;
+  var o = "";
+  VH[u].carros.forEach(function(v){ o+='<option value="'+v.p+'|'+v.m+'">'+v.p+' — '+v.m+'</option>'; });
+  VH[u].motos.forEach(function(v){  o+='<option value="'+v.p+'|'+v.m+'">'+v.p+' — '+v.m+'</option>'; });
+  fv.innerHTML = o;
+}
+function salvarAluno(){
+  var nome = document.getElementById("m-nome").value.trim();
+  var cpf  = document.getElementById("m-cpf").value.trim();
+  var ldv  = document.getElementById("m-ldv").value.trim();
+  if(!nome||!cpf||!ldv){alert("Preencha nome, CPF e LDV.");return;}
+  var mu = document.getElementById("m-un");
+  var un = usr.un || (mu ? mu.value : "Francisco Morato");
+  var fv = document.getElementById("m-vei");
+  var vStr = fv ? fv.value : "ERR8353|Kwid";
+  var vP = vStr.split("|");
+  alunos.push({
+    id:Date.now(), nome:nome, cpf:cpf, ldv:ldv,
+    cat:document.getElementById("m-cat").value,
+    un:un,
+    rst:document.getElementById("m-rst").value,
+    dt:document.getElementById("m-dt").value,
+    hr:document.getElementById("m-hr").value,
+    vei:{p:vP[0],m:vP[1]||"—"},
+    obs:document.getElementById("m-obs").value.trim(),
+    res:null, dtR:null, gr:null
+  });
+  salvarNuvem();
+  fecharModal();
+  renderExames();
+  updStats();
+}
+
+function prepararEdicao(idx) {
+  var lista = filtrados();
+  if (idx < 0 || idx >= lista.length) { alert('Aluno não encontrado.'); return; }
+  var a = lista[idx];
+  alunoEditandoId = a.id;
+
+  var uf = usr.un;
+  var uSel = a.un;
+
+  function vOpts(u, selPlaca) {
+    var o = "";
+    VH[u].carros.forEach(function(v){
+      o += '<option value="'+v.p+'|'+v.m+'"'+(selPlaca===v.p?' selected':'')+'>'+v.p+' — '+v.m+'</option>';
+    });
+    VH[u].motos.forEach(function(v){
+      o += '<option value="'+v.p+'|'+v.m+'"'+(selPlaca===v.p?' selected':'')+'>'+v.p+' — '+v.m+'</option>';
+    });
+    return o;
+  }
+
+  var uField = uf
+    ? '<input class="f-inp" value="'+a.un+'" readonly style="opacity:.6"/>'
+    : '<select class="f-inp" id="m-un" onchange="atualizarVeiculosModal()"><option'+(a.un==='Francisco Morato'?' selected':'')+'>Francisco Morato</option><option'+(a.un==='Franco da Rocha'?' selected':'')+'>Franco da Rocha</option></select>';
+
+  var catsOpts = CATS.map(function(cat){
+    return '<option'+(a.cat===cat?' selected':'')+'>'+cat+'</option>';
+  }).join('');
+
+  var rstrOpts = RESTRS.map(function(r){
+    return '<option'+(a.rst===r?' selected':'')+'>'+r+'</option>';
+  }).join('');
+
+  document.getElementById("modal-body").innerHTML =
+    '<div class="form-grid">'
+    + '<div><label class="f-label">Nome completo *</label><input class="f-inp" id="m-nome" value="'+a.nome+'"/></div>'
+    + '<div class="form-row2"><div><label class="f-label">CPF *</label><input class="f-inp" id="m-cpf" value="'+a.cpf+'"/></div><div><label class="f-label">Nº LDV *</label><input class="f-inp" id="m-ldv" value="'+a.ldv+'"/></div></div>'
+    + '<div class="form-row2"><div><label class="f-label">Data do exame</label><input class="f-inp" type="date" id="m-dt" value="'+a.dt+'"/></div><div><label class="f-label">Horário</label><input class="f-inp" type="time" id="m-hr" value="'+a.hr+'"/></div></div>'
+    + '<div><label class="f-label">Categoria</label><select class="f-inp" id="m-cat">'+catsOpts+'</select></div>'
+    + '<div><label class="f-label">Unidade</label>'+uField+'</div>'
+    + '<div><label class="f-label">Veículo</label><select class="f-inp" id="m-vei">'+vOpts(uSel, a.vei.p)+'</select></div>'
+    + '<div><label class="f-label">Restrição da LDV</label><select class="f-inp" id="m-rst">'+rstrOpts+'</select></div>'
+    + '<div><label class="f-label">Observações</label><textarea class="f-inp" id="m-obs" rows="2" style="resize:vertical">'+a.obs+'</textarea></div>'
+    + '</div>'
+    + '<div class="modal-btns"><button class="btn-cancel" onclick="fecharModal()">Cancelar</button><button class="btn-save" onclick="salvarEdicao()">Salvar Alterações</button></div>';
+
+  document.getElementById("modal-title").textContent = "Editar Aluno";
+  document.getElementById("modal").style.display = "flex";
+}
+
+function salvarEdicao() {
+  var id = alunoEditandoId;
+  if (!id) { alert("Nenhum aluno selecionado para edição."); return; }
+  var nome = document.getElementById("m-nome").value.trim();
+  var cpf  = document.getElementById("m-cpf").value.trim();
+  var ldv  = document.getElementById("m-ldv").value.trim();
+  if (!nome || !cpf || !ldv) { alert("Preencha nome, CPF e LDV."); return; }
+  var mu = document.getElementById("m-un");
+  var un = usr.un || (mu ? mu.value : "Francisco Morato");
+  var fv = document.getElementById("m-vei");
+  var vStr = fv ? fv.value : "ERR8353|Kwid";
+  var vP = vStr.split("|");
+
+  for (var i = 0; i < alunos.length; i++) {
+    if (String(alunos[i].id) === String(id)) {
+      alunos[i].nome = nome;
+      alunos[i].cpf  = cpf;
+      alunos[i].ldv  = ldv;
+      alunos[i].cat  = document.getElementById("m-cat").value;
+      alunos[i].un   = un;
+      alunos[i].rst  = document.getElementById("m-rst").value;
+      alunos[i].dt   = document.getElementById("m-dt").value;
+      alunos[i].hr   = document.getElementById("m-hr").value;
+      alunos[i].vei  = {p: vP[0], m: vP[1] || "—"};
+      alunos[i].obs  = document.getElementById("m-obs").value.trim();
+      break;
+    }
+  }
+  salvarNuvem();
+  fecharModal();
+  renderExames();
+  updStats();
+}
+
+function fecharModal(){
+  document.getElementById("modal").style.display = "none";
+  alunoEditandoId = null;
+}
+// fechar modal clicando fora
+document.getElementById("modal").addEventListener("click", function(e){
+  if(e.target === this) fecharModal();
+});
+</script>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+var firebaseConfig = {
+  apiKey: "AIzaSyBhVqZlkAaUwfd5V4sriuq4KMsec9qbzW4",
+  authDomain: "danpri-exames.firebaseapp.com",
+  databaseURL: "https://danpri-exames-default-rtdb.firebaseio.com",
+  projectId: "danpri-exames",
+  storageBucket: "danpri-exames.firebasestorage.app",
+  messagingSenderId: "865807574443",
+  appId: "1:865807574443:web:a2705dcfa1888627cadeee",
+  measurementId: "G-T5VCDQTYQW"
+};
+firebase.initializeApp(firebaseConfig);
+var db = firebase.database();
+
+// ── Salvar alunos no Firebase ──
+function salvarNuvem() {
+  db.ref('alunos').set(alunos);
+}
+
+// ── Carregar alunos do Firebase ──
+function carregarNuvem() {
+  db.ref('alunos').on('value', function(snapshot) {
+    var dados = snapshot.val();
+    if (dados) {
+      alunos = dados;
+      if (abaAtual === 'exames') renderExames();
+      if (abaAtual === 'dashboard') renderDash();
+      if (abaAtual === 'historico') renderHist();
+      updStats();
+    }
+  });
+}
+
+// ── Salvar veículos no Firebase ──
+function salvarVeiculosNuvem() {
+  db.ref('veiculos').set(VH);
+}
+
+// ── Carregar veículos do Firebase ──
+function carregarVeiculosNuvem() {
+  db.ref('veiculos').once('value', function(snapshot) {
+    var dados = snapshot.val();
+    if (dados) VH = dados;
+  });
+}
+
+// ── EDIÇÃO DE ALUNO ────────────────────────────────────────────────────────
+var _idEditando = null;
+
+function atualizarVeiculosEdicao() {
+  var u = document.getElementById("e-un").value;
+  var sel = document.getElementById("e-vei");
+  sel.innerHTML = "";
+  VH[u].carros.forEach(function(v) {
+    var o = document.createElement("option");
+    o.value = v.p + "|" + v.m;
+    o.textContent = v.p + " — " + v.m;
+    sel.appendChild(o);
+  });
+  VH[u].motos.forEach(function(v) {
+    var o = document.createElement("option");
+    o.value = v.p + "|" + v.m;
+    o.textContent = v.p + " — " + v.m;
+    sel.appendChild(o);
+  });
+}
+
+function abrirModalEdicao(idAluno) {
+  _idEditando = idAluno;
+  var a = null;
+  for (var i = 0; i < alunos.length; i++) {
+    if (String(alunos[i].id) === String(idAluno)) { a = alunos[i]; break; }
+  }
+  if (!a) return;
+
+  // Preencher campos com dados do aluno
+  document.getElementById("e-nome").value = a.nome;
+  document.getElementById("e-cpf").value  = a.cpf;
+  document.getElementById("e-ldv").value  = a.ldv;
+  document.getElementById("e-dt").value   = a.dt;
+  document.getElementById("e-hr").value   = a.hr;
+  document.getElementById("e-obs").value  = a.obs || "";
+
+  // Categoria
+  var eCat = document.getElementById("e-cat");
+  for (var j = 0; j < eCat.options.length; j++) {
+    if (eCat.options[j].text === a.cat) { eCat.selectedIndex = j; break; }
+  }
+
+  // Unidade
+  var eUn = document.getElementById("e-un");
+  for (var k = 0; k < eUn.options.length; k++) {
+    if (eUn.options[k].text === a.un) { eUn.selectedIndex = k; break; }
+  }
+  // Se gerente, bloquear unidade
+  if (usr.un) {
+    eUn.disabled = true;
+  } else {
+    eUn.disabled = false;
+  }
+
+  // Atualizar veículos e selecionar o correto
+  atualizarVeiculosEdicao();
+  var eVei = document.getElementById("e-vei");
+  for (var m = 0; m < eVei.options.length; m++) {
+    if (eVei.options[m].value.split("|")[0] === a.vei.p) { eVei.selectedIndex = m; break; }
+  }
+
+  // Restrição
+  var eRst = document.getElementById("e-rst");
+  for (var n = 0; n < eRst.options.length; n++) {
+    if (eRst.options[n].text === a.rst) { eRst.selectedIndex = n; break; }
+  }
+
+  // Abrir modal
+  document.getElementById("modal-edicao").style.display = "flex";
+}
+
+function importarPDF(input) {
+  var file = input.files[0];
+  if (!file) return;
+  input.value = "";
+  if (typeof pdfjsLib === "undefined") { alert("PDF.js nao carregou. Recarregue a pagina."); return; }
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js";
+  var reader = new FileReader();
+  reader.onerror = function() { alert("Erro ao ler arquivo."); };
+  reader.onload = function(e) {
+    var typedArray = new Uint8Array(e.target.result);
+    pdfjsLib.getDocument(typedArray).promise.then(function(pdf) {
+      var totalPaginas = pdf.numPages;
+      var promises = [];
+      for (var p = 1; p <= totalPaginas; p++) {
+        promises.push(pdf.getPage(p).then(function(page) {
+          return page.getTextContent().then(function(content) {
+            var grupos = {};
+            content.items.forEach(function(item) {
+              var y = item.transform ? Math.round(item.transform[5]) : 0;
+              if (!grupos[y]) grupos[y] = [];
+              grupos[y].push({x: item.transform ? item.transform[4] : 0, str: item.str});
+            });
+            var ys = Object.keys(grupos).map(Number).sort(function(a,b){ return b-a; });
+            var texto = "";
+            ys.forEach(function(y) {
+              var linha = grupos[y].sort(function(a,b){return a.x-b.x;}).map(function(it){return it.str;}).join(" ").trim();
+              if (linha) texto += linha + "\n";
+            });
+            return texto;
+          });
+        }));
+      }
+      Promise.all(promises).then(function(pags) {
+        var textoFinal = pags.join("\n");
+        if (!textoFinal || textoFinal.trim().length < 10) { alert("PDF sem texto legivel."); return; }
+        processarTextoPDF(textoFinal);
+      });
+    }).catch(function(err) { alert("Erro ao abrir PDF: " + err.message); });
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function processarTextoPDF(texto) {
+  var importados = 0, duplicados = 0;
+  var dataHoje = hj();
+  var unidade = usr.un || "Francisco Morato";
+  var veiPadrao = VH[unidade].carros[0];
+
+  function mapCat(cat) {
+    cat = (cat || "").trim().toUpperCase();
+    if (cat === "AB" || cat === "A/B") return "Primeira Habilitacao A/B";
+    if (cat === "A") return "Primeira Habilitacao A";
+    return "Primeira Habilitacao B";
+  }
+  function getVei(placa) {
+    if (!placa) return veiPadrao;
+    var p = placa.replace(/-/g,"").toUpperCase();
+    var todos = VH[unidade].carros.concat(VH[unidade].motos);
+    for (var i = 0; i < todos.length; i++) { if (todos[i].p.replace(/-/g,"").toUpperCase()===p) return todos[i]; }
+    return {p:placa.toUpperCase(),m:"Verificar"};
+  }
+  function add(nome,cpf,cat,placa,hr,obs) {
+    if (cpf) { for (var j=0;j<alunos.length;j++) { if(alunos[j].cpf===cpf){duplicados++;return;} } }
+    alunos.push({id:Date.now()+Math.random(),nome:nome||"Aluno",cpf:cpf||"",ldv:"",cat:mapCat(cat),un:unidade,rst:"Sem restricoes",dt:dataHoje,hr:hr||"08:00",vei:getVei(placa),obs:obs||"Importado do PDF",res:null,dtR:null,gr:null});
+    importados++;
+  }
+
+  // Normalizar texto — remover espaços duplos e juntar linhas
+  // PDF.js às vezes coloca espaços extras entre palavras
+  var textoNorm = texto.replace(/[ \t]{2,}/g, " "); // normalizar espaços na mesma linha
+  var textoJunto = textoNorm.replace(/\n/g, " ").replace(/[ \t]{2,}/g, " "); // juntar tudo
+  var linhas = texto.split("\n");
+
+  var temCPF = /\d{3}\.\d{3}\.\d{3}-\d{2}/.test(texto);
+  var temSP = texto.indexOf("SP-") !== -1;
+
+  if (temCPF && !temSP) {
+    // Estratégia 1: linha a linha com número sequencial
+    var linhasNorm = textoNorm.split("\n");
+    for (var i=0;i<linhasNorm.length;i++) {
+      var m=linhasNorm[i].trim().match(/^(\d{1,2})\s+([A-Z][A-Z\s]{3,60})\s+(\d{3}\.\d{3}\.\d{3}-\d{2})\s+([AB\/]+)/);
+      if(m) add(m[2].trim(),m[3].trim(),m[4],null,"08:00","Importado - complete LDV e veiculo");
+    }
+
+    // Estratégia 2: texto junto com número sequencial
+    if (importados===0) {
+      var r2 = /(\d{1,2})\s+([A-Z][A-Z\s]{3,60}?)\s+(\d{3}\.\d{3}\.\d{3}-\d{2})\s+([AB\/]+)/g;
+      var mj;
+      while ((mj=r2.exec(textoJunto))!==null) {
+        if (!isNaN(mj[1]) && parseInt(mj[1]) >= 1 && parseInt(mj[1]) <= 30) {
+          add(mj[2].trim(),mj[3].trim(),mj[4],null,"08:00","Importado - complete LDV e veiculo");
+        }
+      }
+    }
+
+    // Estratégia 3: só NOME CPF CAT (sem número)
+    if (importados===0) {
+      var r3 = /([A-Z]{2,}(?:\s+[A-Z]{2,}){1,6})\s+(\d{3}\.\d{3}\.\d{3}-\d{2})\s+([AB\/]+)/g;
+      var ms;
+      while ((ms=r3.exec(textoJunto))!==null) {
+        var nome=ms[1].trim();
+        if (nome.length>4 && nome!=="NOME DO CANDIDATO" && nome!=="SEQ NOME DO CANDIDATO CPF CATEG OBS") {
+          add(nome,ms[2].trim(),ms[3],null,"08:00","Importado - complete LDV e veiculo");
+        }
+      }
+    }
+  }
+
+  // FORMATO 1: DETRAN CPF SP- NOME ---- CAT
+  if (importados===0 && temSP) {
+    for (var i=0;i<linhas.length;i++) {
+      var l=linhas[i].trim();
+      var cpfM=l.match(/(\d{3}\.\d{3}\.\d{3}-\d{2})/);
+      if(!cpfM||l.indexOf("SP-")===-1) continue;
+      var cpf=cpfM[1];
+      var catM=l.match(/----\s*(AB|A\/B|A|B)/)||l.match(/\b(AB|A\/B|A|B)\s*$/);
+      var cat=catM?catM[catM.length-1]:"B";
+      var nomeM=l.match(/SP-[\w-]+\s+P\s+([A-Z][A-Z\s]+?)\s+----/);
+      add(nomeM?nomeM[1].trim():"Aluno "+cpf,cpf,cat,null,"08:00","Importado - complete LDV e veiculo");
+    }
+  }
+
+  // FORMATO 2: 01- NOME INSTRUTOR (N)CAT PLACA OK HH:MM
+  if (importados===0) {
+    for (var i=0;i<linhas.length;i++) {
+      var m=linhas[i].trim().match(/^(\d{1,3})-\s+([A-Z][A-Z\s]{2,20}?)\s+(?:[A-Z]+\s+)+\(\d\)([AB\/]+)\s+([A-Z0-9]{3}-?[0-9A-Z]{3,4})\s+OK.*(\d{2}:\d{2})/);
+      if(m) add(m[2].trim(),"",m[3],m[4],m[5],"Importado - complete CPF e LDV");
+    }
+  }
+
+  // Estrategia 4: formato SAE/CIRETRAN (SEQ NOME CPF CAT)
+  if (importados===0) {
+    var textoS4 = texto.replace(/[─\-─]+/g," ").replace(/[ \t]{2,}/g," ");
+    var linhasS4 = textoS4.split("\n");
+    for (var i4=0; i4<linhasS4.length; i4++) {
+      var ls4 = linhasS4[i4].replace(/[ \t]{2,}/g," ").trim();
+      var ms4 = ls4.match(/^(\d{1,2})\s+([A-Z][A-Z ]{2,60}?)\s+(\d{3}\.\d{3}\.\d{3}-\d{2})\s+([AB\/]+)/);
+      if (ms4) {
+        var seq4=parseInt(ms4[1]);
+        var nome4=ms4[2].trim();
+        var cpf4=ms4[3].trim();
+        var cat4=ms4[4].trim();
+        if (seq4>=1 && seq4<=50 && nome4.length>3 && nome4!=="NOME DO CANDIDATO") {
+          add(nome4,cpf4,cat4,null,"08:00","Importado - complete LDV e veiculo");
+        }
+      }
+    }
+  }
+  if (importados===0) {
+    var debugDiv = document.createElement("div");
+    debugDiv.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;padding:20px;overflow:auto";
+    debugDiv.innerHTML = "<h3 style='color:white;margin-bottom:10px'>Texto lido do PDF (copie e mande para o suporte):</h3><textarea style='width:100%;height:80%;background:#111;color:#0f0;font-family:monospace;font-size:11px;padding:10px'>" + texto + "</textarea><br><button onclick='this.parentNode.remove()' style='margin-top:10px;padding:8px 20px;background:#c00;color:#fff;border:none;cursor:pointer'>Fechar</button>";
+    document.body.appendChild(debugDiv);
+    return;
+  }
+  salvarNuvem(); renderExames(); updStats();
+  alert(importados+" aluno(s) importado(s)!"+(duplicados>0?"\n"+duplicados+" ja existiam.":"")+"\n\nComplete os dados com o botao Editar.");
+}
+
+
+function confirmarEdicao() {
+  if (!_idEditando) return;
+  var nome = document.getElementById("e-nome").value.trim();
+  var cpf  = document.getElementById("e-cpf").value.trim();
+  var ldv  = document.getElementById("e-ldv").value.trim();
+  if (!nome || !cpf || !ldv) { alert("Preencha nome, CPF e LDV."); return; }
+
+  var un   = document.getElementById("e-un").value;
+  var vStr = document.getElementById("e-vei").value;
+  var vP   = vStr.split("|");
+
+  for (var i = 0; i < alunos.length; i++) {
+    if (String(alunos[i].id) === String(_idEditando)) {
+      alunos[i].nome = nome;
+      alunos[i].cpf  = cpf;
+      alunos[i].ldv  = ldv;
+      alunos[i].cat  = document.getElementById("e-cat").value;
+      alunos[i].un   = un;
+      alunos[i].rst  = document.getElementById("e-rst").value;
+      alunos[i].dt   = document.getElementById("e-dt").value;
+      alunos[i].hr   = document.getElementById("e-hr").value;
+      alunos[i].vei  = { p: vP[0], m: vP[1] || "—" };
+      alunos[i].obs  = document.getElementById("e-obs").value.trim();
+      break;
+    }
+  }
+
+  salvarNuvem();
+  document.getElementById("modal-edicao").style.display = "none";
+  _idEditando = null;
+  renderExames();
+  updStats();
+}
+
+
+
+
+
+
+</script>
+
+<!-- Modal Edição FIXO -->
+<div class="modal-overlay" id="modal-edicao" style="display:none">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <span class="modal-title">✏️ Editar Aluno</span>
+      <button class="modal-x" onclick="document.getElementById('modal-edicao').style.display='none'">×</button>
+    </div>
+    <div class="form-grid">
+      <div><label class="f-label">Nome completo *</label><input class="f-inp" id="e-nome" placeholder="Nome completo"/></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label class="f-label">CPF *</label><input class="f-inp" id="e-cpf" placeholder="000.000.000-00"/></div>
+        <div><label class="f-label">Nº LDV *</label><input class="f-inp" id="e-ldv" placeholder="000000000"/></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label class="f-label">Data do exame</label><input class="f-inp" type="date" id="e-dt"/></div>
+        <div><label class="f-label">Horário</label><input class="f-inp" type="time" id="e-hr"/></div>
+      </div>
+      <div><label class="f-label">Categoria</label>
+        <select class="f-inp" id="e-cat">
+          <option>Primeira Habilitação A</option>
+          <option>Primeira Habilitação B</option>
+          <option>Primeira Habilitação A/B</option>
+          <option>Adição de Categoria A</option>
+          <option>Adição de Categoria B</option>
+        </select>
+      </div>
+      <div><label class="f-label">Unidade</label>
+        <select class="f-inp" id="e-un" onchange="atualizarVeiculosEdicao()">
+          <option>Francisco Morato</option>
+          <option>Franco da Rocha</option>
+        </select>
+      </div>
+      <div><label class="f-label">Veículo</label>
+        <select class="f-inp" id="e-vei"></select>
+      </div>
+      <div><label class="f-label">Restrição da LDV</label>
+        <select class="f-inp" id="e-rst">
+          <option>Sem restrições</option>
+          <option>Uso obrigatório de óculos</option>
+          <option>Deficiência auditiva</option>
+          <option>Deficiência física</option>
+          <option>Veículo adaptado</option>
+          <option>Outras observações</option>
+        </select>
+      </div>
+      <div><label class="f-label">Observações</label>
+        <textarea class="f-inp" id="e-obs" rows="2" style="resize:vertical" placeholder="Informações adicionais..."></textarea>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px">
+      <button class="btn-cancel" onclick="document.getElementById('modal-edicao').style.display='none'">Cancelar</button>
+      <button class="btn-save" onclick="confirmarEdicao()">Salvar Alterações</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
