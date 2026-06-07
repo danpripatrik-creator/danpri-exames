@@ -1101,38 +1101,39 @@ function processarTextoPDF(texto) {
     importados++;
   }
 
-  // Juntar linhas para detectar casos onde nome e CPF estão em linhas separadas
-  var textoJunto = texto.replace(/\n/g, " ");
+  // Normalizar texto — juntar tudo numa linha só para busca
+  var textoJunto = texto.replace(/\n/g, " ").replace(/\s{2,}/g, " ");
   var linhas = texto.split("\n");
 
-  // FORMATO 3: SEQ NOME CPF CAT — tenta na mesma linha E no texto junto
-  var cpfRegex = /\d{3}\.\d{3}\.\d{3}-\d{2}/;
-  var temCPF = cpfRegex.test(texto);
+  var temCPF = /\d{3}\.\d{3}\.\d{3}-\d{2}/.test(texto);
   var temSP = texto.indexOf("SP-") !== -1;
 
   if (temCPF && !temSP) {
-    // Tentar linha a linha primeiro
-    var achouLinha = false;
+    // Estratégia 1: linha a linha com número sequencial
     for (var i=0;i<linhas.length;i++) {
       var m=linhas[i].trim().match(/^(\d{1,2})\s+([A-Z][A-Z\s]{3,60})\s+(\d{3}\.\d{3}\.\d{3}-\d{2})\s+([AB\/]+)/);
-      if(m) { add(m[2].trim(),m[3].trim(),m[4],null,"08:00","Importado - complete LDV e veiculo"); achouLinha=true; }
+      if(m) add(m[2].trim(),m[3].trim(),m[4],null,"08:00","Importado - complete LDV e veiculo");
     }
-    // Se não achou em linha, tentar no texto junto (PDF.js pode quebrar linhas diferente)
-    if (!achouLinha) {
-      var regexJunto = /(\d{1,2})\s+([A-Z][A-Z\s]{3,60}?)\s+(\d{3}\.\d{3}\.\d{3}-\d{2})\s+([AB\/]+)/g;
+
+    // Estratégia 2: texto junto com número sequencial
+    if (importados===0) {
+      var r2 = /(\d{1,2})\s+([A-Z][A-Z\s]{3,60}?)\s+(\d{3}\.\d{3}\.\d{3}-\d{2})\s+([AB\/]+)/g;
       var mj;
-      while ((mj = regexJunto.exec(textoJunto)) !== null) {
-        add(mj[2].trim(), mj[3].trim(), mj[4], null, "08:00", "Importado - complete LDV e veiculo");
+      while ((mj=r2.exec(textoJunto))!==null) {
+        if (!isNaN(mj[1]) && parseInt(mj[1]) >= 1 && parseInt(mj[1]) <= 30) {
+          add(mj[2].trim(),mj[3].trim(),mj[4],null,"08:00","Importado - complete LDV e veiculo");
+        }
       }
     }
-    // Também tentar padrão sem número: NOME CPF CAT
-    if (importados === 0) {
-      var regexSemNum = /([A-Z][A-Z\s]{5,60})\s+(\d{3}\.\d{3}\.\d{3}-\d{2})\s+([AB\/]+)/g;
+
+    // Estratégia 3: só NOME CPF CAT (sem número)
+    if (importados===0) {
+      var r3 = /([A-Z]{2,}(?:\s+[A-Z]{2,}){1,6})\s+(\d{3}\.\d{3}\.\d{3}-\d{2})\s+([AB\/]+)/g;
       var ms;
-      while ((ms = regexSemNum.exec(textoJunto)) !== null) {
-        var nome = ms[1].trim();
-        if (nome.length > 4 && nome !== "NOME DO CANDIDATO") {
-          add(nome, ms[2].trim(), ms[3], null, "08:00", "Importado - complete LDV e veiculo");
+      while ((ms=r3.exec(textoJunto))!==null) {
+        var nome=ms[1].trim();
+        if (nome.length>4 && nome!=="NOME DO CANDIDATO" && nome!=="SEQ NOME DO CANDIDATO CPF CATEG OBS") {
+          add(nome,ms[2].trim(),ms[3],null,"08:00","Importado - complete LDV e veiculo");
         }
       }
     }
