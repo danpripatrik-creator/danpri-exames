@@ -145,6 +145,8 @@ body{background:var(--bg);color:var(--text);min-height:100vh}
 .fi-count{font-size:11px;color:var(--text3);flex-shrink:0;margin-left:4px}
 .btn-novo{background:var(--green2);border:none;border-radius:var(--radius);padding:9px 18px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px;flex-shrink:0;transition:background .15s}
 .btn-novo:hover{background:var(--green)}
+.btn-importar{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius);padding:9px 18px;color:var(--gold2);font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0}
+.btn-importar:hover{background:var(--bg4)}
 .btn-importar{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius);padding:9px 18px;color:var(--gold2);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px;flex-shrink:0;transition:all .15s}
 .btn-importar:hover{background:var(--bg4);border-color:var(--gold2)}
 
@@ -572,10 +574,8 @@ function renderExames() {
     + (isAdmin ? '<select class="fi" id="f-unid" onchange="renderExames()"><option value="">Todas as unidades</option><option>Francisco Morato</option><option>Franco da Rocha</option></select>' : '<input id="f-unid" type="hidden" value=""/>')
     + '<select class="fi" id="f-res" onchange="renderExames()"><option value="">Todos</option><option value="pendente">Pendente</option><option value="aprovado">Aprovado</option><option value="reprovado">Reprovado</option><option value="faltou">Faltou</option></select>'
     + '<span class="fi-count" id="f-count">0</span>'
-    + '<button class="btn-novo" onclick="abrirModal()">＋ Novo Aluno</button>' +
-    '<button class="btn-importar" onclick="document.getElementById(\'inp-pdf\').click()">📄 Importar PDF</button>' +
-    '<input type="file" id="inp-pdf" accept=".pdf" style="display:none" onchange="importarPDF(this)"/>'
-    + '</div>';
+    + '<button class="btn-novo" onclick="abrirModal()">＋ Novo Aluno</button><button class="btn-importar" onclick="document.getElementById(\'inp-pdf\').click()">📄 Importar PDF</button><input type="file" id="inp-pdf" accept=".pdf" style="display:none" onchange="importarPDF(this)"/>' +
+    '<button class="btn-importar" onclick="document.getElementById(\'inp-pdf\').click()">📄 Importar PDF</button>' +'</div>';
 
   var lista = filtrados();
   document.getElementById("f-count") && (document.getElementById("f-count").textContent = lista.length + " aluno(s)");
@@ -1036,6 +1036,104 @@ function abrirModalEdicao(idAluno) {
   document.getElementById("modal-edicao").style.display = "flex";
 }
 
+function importarPDF(input) {
+  var file = input.files[0];
+  if (!file) return;
+  input.value = "";
+  if (typeof pdfjsLib === "undefined") { alert("PDF.js nao carregou. Recarregue a pagina."); return; }
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js";
+  var reader = new FileReader();
+  reader.onerror = function() { alert("Erro ao ler arquivo."); };
+  reader.onload = function(e) {
+    var typedArray = new Uint8Array(e.target.result);
+    pdfjsLib.getDocument(typedArray).promise.then(function(pdf) {
+      var totalPaginas = pdf.numPages;
+      var promises = [];
+      for (var p = 1; p <= totalPaginas; p++) {
+        promises.push(pdf.getPage(p).then(function(page) {
+          return page.getTextContent().then(function(content) {
+            var grupos = {};
+            content.items.forEach(function(item) {
+              var y = item.transform ? Math.round(item.transform[5]) : 0;
+              if (!grupos[y]) grupos[y] = [];
+              grupos[y].push({x: item.transform ? item.transform[4] : 0, str: item.str});
+            });
+            var ys = Object.keys(grupos).map(Number).sort(function(a,b){ return b-a; });
+            var texto = "";
+            ys.forEach(function(y) {
+              var linha = grupos[y].sort(function(a,b){return a.x-b.x;}).map(function(it){return it.str;}).join(" ").trim();
+              if (linha) texto += linha + "\n";
+            });
+            return texto;
+          });
+        }));
+      }
+      Promise.all(promises).then(function(pags) {
+        var textoFinal = pags.join("\n");
+        if (!textoFinal || textoFinal.trim().length < 10) { alert("PDF sem texto legivel."); return; }
+        processarTextoPDF(textoFinal);
+      });
+    }).catch(function(err) { alert("Erro ao abrir PDF: " + err.message); });
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function processarTextoPDF(texto) {
+  var importados = 0, duplicados = 0;
+  var dataHoje = hj();
+  var unidade = usr.un || "Francisco Morato";
+  var veiPadrao = VH[unidade].carros[0];
+  function mapCat(cat) {
+    cat = (cat || "").trim().toUpperCase();
+    if (cat === "AB" || cat === "A/B") return "Primeira Habilitacao A/B";
+    if (cat === "A") return "Primeira Habilitacao A";
+    return "Primeira Habilitacao B";
+  }
+  function getVei(placa) {
+    if (!placa) return veiPadrao;
+    var p = placa.replace(/-/g,"").toUpperCase();
+    var todos = VH[unidade].carros.concat(VH[unidade].motos);
+    for (var i = 0; i < todos.length; i++) { if (todos[i].p.replace(/-/g,"").toUpperCase()===p) return todos[i]; }
+    return {p:placa.toUpperCase(),m:"Verificar"};
+  }
+  function add(nome,cpf,cat,placa,hr,obs) {
+    if (cpf) { for (var j=0;j<alunos.length;j++) { if(alunos[j].cpf===cpf){duplicados++;return;} } }
+    alunos.push({id:Date.now()+Math.random(),nome:nome||"Aluno",cpf:cpf||"",ldv:"",cat:mapCat(cat),un:unidade,rst:"Sem restricoes",dt:dataHoje,hr:hr||"08:00",vei:getVei(placa),obs:obs||"Importado do PDF",res:null,dtR:null,gr:null});
+    importados++;
+  }
+  var linhas = texto.split("\n");
+  var fmt3 = false;
+  for (var i=0;i<linhas.length;i++) { if(/^\s*\d{1,2}\s+[A-Z]{2}.*\d{3}\.\d{3}\.\d{3}-\d{2}/.test(linhas[i])){fmt3=true;break;} }
+  if (fmt3) {
+    for (var i=0;i<linhas.length;i++) {
+      var m=linhas[i].trim().match(/^(\d{1,2})\s+([A-Z][A-Z\s]{3,60})\s+(\d{3}\.\d{3}\.\d{3}-\d{2})\s+([AB\/]+)/);
+      if(m) add(m[2].trim(),m[3].trim(),m[4],null,"08:00","Importado - complete LDV e veiculo");
+    }
+  }
+  if (importados===0) {
+    for (var i=0;i<linhas.length;i++) {
+      var l=linhas[i].trim();
+      var cpfM=l.match(/(\d{3}\.\d{3}\.\d{3}-\d{2})/);
+      if(!cpfM||l.indexOf("SP-")===-1) continue;
+      var cpf=cpfM[1];
+      var catM=l.match(/----\s*(AB|A\/B|A|B)/)||l.match(/\b(AB|A\/B|A|B)\s*$/);
+      var cat=catM?catM[catM.length-1]:"B";
+      var nomeM=l.match(/SP-[\w-]+\s+P\s+([A-Z][A-Z\s]+?)\s+----/);
+      add(nomeM?nomeM[1].trim():"Aluno "+cpf,cpf,cat,null,"08:00","Importado - complete LDV e veiculo");
+    }
+  }
+  if (importados===0) {
+    for (var i=0;i<linhas.length;i++) {
+      var m=linhas[i].trim().match(/^(\d{1,3})-\s+([A-Z][A-Z\s]{2,20}?)\s+(?:[A-Z]+\s+)+\(\d\)([AB\/]+)\s+([A-Z0-9]{3}-?[0-9A-Z]{3,4})\s+OK.*(\d{2}:\d{2})/);
+      if(m) add(m[2].trim(),"",m[3],m[4],m[5],"Importado - complete CPF e LDV");
+    }
+  }
+  if (importados===0) { alert("Nenhum aluno encontrado.\n\nTexto:\n"+texto.substring(0,400)); return; }
+  salvarNuvem(); renderExames(); updStats();
+  alert(importados+" aluno(s) importado(s)!"+(duplicados>0?"\n"+duplicados+" ja existiam.":"")+"\n\nComplete os dados com o botao Editar.");
+}
+
+
 function confirmarEdicao() {
   if (!_idEditando) return;
   var nome = document.getElementById("e-nome").value.trim();
@@ -1071,154 +1169,66 @@ function confirmarEdicao() {
 }
 
 
-// ── IMPORTAR PDF ────────────────────────────────────────────────────────────
-// ── IMPORTAR PDF ────────────────────────────────────────────────────────────
-function importarPDF(input) {
-  var file = input.files[0];
-  if (!file) return;
-  input.value = "";
-  if (typeof pdfjsLib === "undefined") {
-    alert("PDF.js não carregou. Verifique sua conexão e recarregue a página.");
-    return;
-  }
-  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js";
-  var reader = new FileReader();
-  reader.onerror = function() { alert("Erro ao ler arquivo."); };
-  reader.onload = function(e) {
-    var typedArray = new Uint8Array(e.target.result);
-    pdfjsLib.getDocument(typedArray).promise.then(function(pdf) {
-      var totalPaginas = pdf.numPages;
-      var promises = [];
-      for (var p = 1; p <= totalPaginas; p++) {
-        promises.push(pdf.getPage(p).then(function(page) {
-          return page.getTextContent().then(function(content) {
-            var grupos = {};
-            content.items.forEach(function(item) {
-              var y = item.transform ? Math.round(item.transform[5]) : 0;
-              if (!grupos[y]) grupos[y] = [];
-              grupos[y].push({x: item.transform ? item.transform[4] : 0, str: item.str});
-            });
-            var ys = Object.keys(grupos).map(Number).sort(function(a,b){ return b-a; });
-            var texto = "";
-            ys.forEach(function(y) {
-              var linha = grupos[y].sort(function(a,b){return a.x-b.x;}).map(function(it){return it.str;}).join(" ").trim();
-              if (linha) texto += linha + "\n";
-            });
-            return texto;
-          });
-        }));
-      }
-      Promise.all(promises).then(function(pags) {
-        var textoFinal = pags.join("\n");
-        if (!textoFinal.trim()) { alert("PDF sem texto legível."); return; }
-        processarTextoPDF(textoFinal);
-      });
-    }).catch(function(err) { alert("Erro ao abrir PDF: " + err.message); });
-  };
-  reader.readAsArrayBuffer(file);
-}
 
 
 
 
-function processarTextoPDF(texto) {
-  var importados = 0;
-  var duplicados = 0;
-  var dataHoje = hj();
-  var unidade = usr.un || "Francisco Morato";
-  var veiPadrao = VH[unidade].carros[0];
+</script>
 
-  function mapCat(cat) {
-    cat = (cat || "").trim().toUpperCase();
-    if (cat === "AB" || cat === "A/B") return "Primeira Habilitação A/B";
-    if (cat === "A") return "Primeira Habilitação A";
-    return "Primeira Habilitação B";
-  }
-
-  function placaParaVeiculo(placa) {
-    if (!placa) return veiPadrao;
-    var p = placa.replace(/-/g,"").toUpperCase();
-    var todos = VH[unidade].carros.concat(VH[unidade].motos);
-    for (var i = 0; i < todos.length; i++) {
-      if (todos[i].p.replace(/-/g,"").toUpperCase() === p) return todos[i];
-    }
-    return {p: placa.toUpperCase(), m: "Verificar"};
-  }
-
-  function addAluno(nome, cpf, cat, placa, hr, obs) {
-    if (cpf) {
-      for (var j = 0; j < alunos.length; j++) {
-        if (alunos[j].cpf === cpf) { duplicados++; return; }
-      }
-    }
-    alunos.push({
-      id: Date.now() + Math.random(),
-      nome: nome || "Aluno",
-      cpf: cpf || "",
-      ldv: "",
-      cat: mapCat(cat),
-      un: unidade,
-      rst: "Sem restrições",
-      dt: dataHoje,
-      hr: hr || "08:00",
-      vei: placaParaVeiculo(placa),
-      obs: obs || "Importado do PDF",
-      res: null, dtR: null, gr: null
-    });
-    importados++;
-  }
-
-  var linhas = texto.split("\n");
-
-  // FORMATO 3: 1 NOME COMPLETO CPF CAT
-  var fmt3 = false;
-  for (var i = 0; i < linhas.length; i++) {
-    if (/^\s*\d{1,2}\s+[A-Z]{2}.*\d{3}\.\d{3}\.\d{3}-\d{2}/.test(linhas[i])) { fmt3 = true; break; }
-  }
-  if (fmt3) {
-    for (var i = 0; i < linhas.length; i++) {
-      var l = linhas[i].trim();
-      var m = l.match(/^(\d{1,2})\s+([A-Z][A-Z\s]{3,60})\s+(\d{3}\.\d{3}\.\d{3}-\d{2})\s+([AB\/]+)/);
-      if (m) { addAluno(m[2].trim(), m[3].trim(), m[4], null, "08:00", "Importado — complete LDV, horário e veículo"); }
-    }
-  }
-
-  // FORMATO 1: CPF SP- NOME ---- CAT
-  if (importados === 0) {
-    for (var i = 0; i < linhas.length; i++) {
-      var l = linhas[i].trim();
-      var cpfM = l.match(/(\d{3}\.\d{3}\.\d{3}-\d{2})/);
-      if (!cpfM || l.indexOf("SP-") === -1) continue;
-      var cpf = cpfM[1];
-      var catM = l.match(/----\s*(AB|A\/B|A|B)/) || l.match(/\b(AB|A\/B|A|B)\s*$/);
-      var cat = catM ? catM[catM.length-1] : "B";
-      var nomeM = l.match(/SP-[\w-]+\s+P\s+([A-Z][A-Z\s]+?)\s+----/);
-      var nome = nomeM ? nomeM[1].trim() : "Aluno " + cpf;
-      addAluno(nome, cpf, cat, null, "08:00", "Importado — complete LDV, horário e veículo");
-    }
-  }
-
-  // FORMATO 2: 01- NOME INSTRUTOR (N)CAT PLACA OK HH:MM
-  if (importados === 0) {
-    for (var i = 0; i < linhas.length; i++) {
-      var l = linhas[i].trim();
-      var m = l.match(/^(\d{1,3})-\s+([A-Z][A-Z\s]{2,20}?)\s+(?:[A-Z]+\s+)+\(\d\)([AB\/]+)\s+([A-Z0-9]{3}-?[0-9A-Z]{3,4})\s+OK.*(\d{2}:\d{2})/);
-      if (m) { addAluno(m[2].trim(), "", m[3], m[4], m[5], "Importado — complete CPF e LDV"); }
-    }
-  }
-
-  if (importados === 0) {
-    alert("Nenhum aluno encontrado.\n\nTexto lido:\n" + texto.substring(0, 400));
-    return;
-  }
-
-  salvarNuvem();
-  renderExames();
-  updStats();
-
-  var msg = importados + " aluno(s) importado(s) com sucesso!";
-  if (duplicados > 0) msg += "\n" + duplicados + " já existiam.";
-  msg += "\n\nComplete LDV, horário e veículo usando o botão Editar.";
-  alert(msg);
-}
-
+<!-- Modal Edição FIXO -->
+<div class="modal-overlay" id="modal-edicao" style="display:none">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <span class="modal-title">✏️ Editar Aluno</span>
+      <button class="modal-x" onclick="document.getElementById('modal-edicao').style.display='none'">×</button>
+    </div>
+    <div class="form-grid">
+      <div><label class="f-label">Nome completo *</label><input class="f-inp" id="e-nome" placeholder="Nome completo"/></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label class="f-label">CPF *</label><input class="f-inp" id="e-cpf" placeholder="000.000.000-00"/></div>
+        <div><label class="f-label">Nº LDV *</label><input class="f-inp" id="e-ldv" placeholder="000000000"/></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label class="f-label">Data do exame</label><input class="f-inp" type="date" id="e-dt"/></div>
+        <div><label class="f-label">Horário</label><input class="f-inp" type="time" id="e-hr"/></div>
+      </div>
+      <div><label class="f-label">Categoria</label>
+        <select class="f-inp" id="e-cat">
+          <option>Primeira Habilitação A</option>
+          <option>Primeira Habilitação B</option>
+          <option>Primeira Habilitação A/B</option>
+          <option>Adição de Categoria A</option>
+          <option>Adição de Categoria B</option>
+        </select>
+      </div>
+      <div><label class="f-label">Unidade</label>
+        <select class="f-inp" id="e-un" onchange="atualizarVeiculosEdicao()">
+          <option>Francisco Morato</option>
+          <option>Franco da Rocha</option>
+        </select>
+      </div>
+      <div><label class="f-label">Veículo</label>
+        <select class="f-inp" id="e-vei"></select>
+      </div>
+      <div><label class="f-label">Restrição da LDV</label>
+        <select class="f-inp" id="e-rst">
+          <option>Sem restrições</option>
+          <option>Uso obrigatório de óculos</option>
+          <option>Deficiência auditiva</option>
+          <option>Deficiência física</option>
+          <option>Veículo adaptado</option>
+          <option>Outras observações</option>
+        </select>
+      </div>
+      <div><label class="f-label">Observações</label>
+        <textarea class="f-inp" id="e-obs" rows="2" style="resize:vertical" placeholder="Informações adicionais..."></textarea>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px">
+      <button class="btn-cancel" onclick="document.getElementById('modal-edicao').style.display='none'">Cancelar</button>
+      <button class="btn-save" onclick="confirmarEdicao()">Salvar Alterações</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
