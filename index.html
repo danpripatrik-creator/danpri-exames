@@ -145,9 +145,7 @@ body{background:var(--bg);color:var(--text);min-height:100vh}
 .fi-count{font-size:11px;color:var(--text3);flex-shrink:0;margin-left:4px}
 .btn-novo{background:var(--green2);border:none;border-radius:var(--radius);padding:9px 18px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px;flex-shrink:0;transition:background .15s}
 .btn-novo:hover{background:var(--green)}
-.btn-importar{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius);padding:9px 18px;color:var(--gold2);font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0}
-.btn-importar:hover{background:var(--bg4)}
-.btn-importar{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius);padding:9px 18px;color:var(--gold2);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px;flex-shrink:0;transition:all .15s}
+.btn-importar{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius);padding:9px 18px;color:var(--gold2);font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;transition:all .15s}
 .btn-importar:hover{background:var(--bg4);border-color:var(--gold2)}
 
 /* Cards aluno */
@@ -575,7 +573,7 @@ function renderExames() {
     + '<select class="fi" id="f-res" onchange="renderExames()"><option value="">Todos</option><option value="pendente">Pendente</option><option value="aprovado">Aprovado</option><option value="reprovado">Reprovado</option><option value="faltou">Faltou</option></select>'
     + '<span class="fi-count" id="f-count">0</span>'
     + '<button class="btn-novo" onclick="abrirModal()">＋ Novo Aluno</button><button class="btn-importar" onclick="document.getElementById(\'inp-pdf\').click()">📄 Importar PDF</button><input type="file" id="inp-pdf" accept=".pdf" style="display:none" onchange="importarPDF(this)"/>' +
-    '<button class="btn-importar" onclick="document.getElementById(\'inp-pdf\').click()">📄 Importar PDF</button>' +'</div>';
+     +'</div>';
 
   var lista = filtrados();
   document.getElementById("f-count") && (document.getElementById("f-count").textContent = lista.length + " aluno(s)");
