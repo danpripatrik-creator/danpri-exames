@@ -424,13 +424,7 @@ function fD(d){ return d ? new Date(d).toLocaleDateString("pt-BR") : "—"; }
 function fT(d){ return d ? new Date(d).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}) : "—"; }
 function ini(n){ return n.split(" ").slice(0,2).map(function(x){return x[0]}).join(""); }
 
-var alunos = [
-  {id:1,nome:"João da Silva",cpf:"123.456.789-00",cat:"Adição de Categoria B",un:"Francisco Morato",ldv:"987654321",rst:"Uso obrigatório de óculos",dt:hj(),hr:"08:30",vei:{p:"ERR8353",m:"Kwid"},obs:"",res:null,dtR:null,gr:null},
-  {id:2,nome:"Maria Souza",cpf:"987.654.321-00",cat:"Primeira Habilitação B",un:"Francisco Morato",ldv:"123456789",rst:"Sem restrições",dt:hj(),hr:"09:00",vei:{p:"EZN7H16",m:"Kwid"},obs:"Candidata nervosa",res:"aprovado",dtR:new Date().toISOString(),gr:"Admin DanPri"},
-  {id:3,nome:"Carlos Oliveira",cpf:"456.789.123-00",cat:"Primeira Habilitação A",un:"Franco da Rocha",ldv:"654321987",rst:"Deficiência física",dt:hj(),hr:"10:00",vei:{p:"GGN8E65",m:"Factor"},obs:"",res:"reprovado",dtR:new Date().toISOString(),gr:"Admin DanPri"},
-  {id:4,nome:"Ana Lima",cpf:"321.654.987-00",cat:"Adição de Categoria A",un:"Franco da Rocha",ldv:"789123456",rst:"Sem restrições",dt:hj(),hr:"11:00",vei:{p:"FCX2B93",m:"Honda Fan"},obs:"",res:null,dtR:null,gr:null},
-  {id:5,nome:"Pedro Santos",cpf:"111.222.333-44",cat:"Primeira Habilitação A/B",un:"Francisco Morato",ldv:"111222333",rst:"Sem restrições",dt:hj(),hr:"14:00",vei:{p:"GFY2B66",m:"Factor"},obs:"",res:"faltou",dtR:new Date().toISOString(),gr:"Admin DanPri"}
-];
+var alunos = [];
 var usr = null, selU = "", abaAtual = "exames", alunoEditandoId = null;
 var chartAprov = null, chartCat = null;
 
@@ -500,8 +494,7 @@ function hojeLista() {
   return alunosVisiveis().filter(function(a){ return a.dt === hj(); });
 }
 function updStats() {
-  var dtFiltro = (document.getElementById("f-data") && document.getElementById("f-data").value) ? document.getElementById("f-data").value : hj();
-  var d = alunosVisiveis().filter(function(a){ return a.dt === dtFiltro; });
+  var d = hojeLista();
   document.getElementById("st-tot").textContent = d.length;
   document.getElementById("st-aprov").textContent = d.filter(function(a){ return a.res === "aprovado"; }).length;
 }
@@ -567,15 +560,14 @@ function mkBtn(b, aId, aRes) {
 
 function renderExames() {
   var isAdmin = usr && usr.perfil === "Admin";
-  var dtAtual = (document.getElementById("f-data") && document.getElementById("f-data").value) ? document.getElementById("f-data").value : hj();
   var filtBar = '<div class="filtros-bar">'
     + '<input class="fi fi-s" id="f-busca" placeholder="🔍 Buscar aluno, CPF ou placa..." oninput="renderExames()"/>'
-    + '<input class="fi" type="date" id="f-data" value="' + dtAtual + '" onchange="renderExames()"/>'
+    + '<input class="fi" type="date" id="f-data" value="' + hj() + '" onchange="renderExames()"/>'
     + (isAdmin ? '<select class="fi" id="f-unid" onchange="renderExames()"><option value="">Todas as unidades</option><option>Francisco Morato</option><option>Franco da Rocha</option></select>' : '<input id="f-unid" type="hidden" value=""/>')
     + '<select class="fi" id="f-res" onchange="renderExames()"><option value="">Todos</option><option value="pendente">Pendente</option><option value="aprovado">Aprovado</option><option value="reprovado">Reprovado</option><option value="faltou">Faltou</option></select>'
     + '<span class="fi-count" id="f-count">0</span>'
-    + '<button class="btn-novo" onclick="abrirModal()">＋ Novo Aluno</button><button class="btn-importar" onclick="document.getElementById(\'inp-pdf\').click()">📄 Importar PDF</button><input type="file" id="inp-pdf" accept=".pdf" style="display:none" onchange="importarPDF(this)"/>'
-    + '</div>';
+    + '<button class="btn-novo" onclick="abrirModal()">＋ Novo Aluno</button><button class="btn-importar" onclick="document.getElementById(\'inp-pdf\').click()">📄 Importar PDF</button><input type="file" id="inp-pdf" accept=".pdf" style="display:none" onchange="importarPDF(this)"/>' +
+     +'</div>';
 
   var lista = filtrados();
   document.getElementById("f-count") && (document.getElementById("f-count").textContent = lista.length + " aluno(s)");
@@ -1036,33 +1028,6 @@ function abrirModalEdicao(idAluno) {
   document.getElementById("modal-edicao").style.display = "flex";
 }
 
-function escolherDataImport() {
-  var dataAtual = document.getElementById("f-data") ? document.getElementById("f-data").value : hj();
-  var overlay = document.createElement("div");
-  overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:999;backdrop-filter:blur(4px)";
-  overlay.innerHTML = '<div style="background:#0f1629;border:1px solid #253660;border-radius:14px;padding:28px;width:320px">'
-    + '<h3 style="color:#e8eeff;font-size:15px;margin-bottom:6px">Importar PDF</h3>'
-    + '<p style="color:#7a90c0;font-size:12px;margin-bottom:18px">Selecione a data dos exames antes de importar:</p>'
-    + '<label style="font-size:11px;color:#3d5080;font-weight:600;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:6px">Data do exame</label>'
-    + '<input type="date" id="import-data-input" value="'+dataAtual+'" style="width:100%;background:#141c35;border:1px solid #1e2d4a;border-radius:10px;padding:11px 14px;color:#e8eeff;font-size:13px;outline:none;margin-bottom:18px"/>'
-    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
-    + '<button onclick="this.closest(\'div\').parentNode.remove()" style="background:#141c35;border:1px solid #1e2d4a;border-radius:10px;padding:11px;color:#7a90c0;font-size:13px;cursor:pointer">Cancelar</button>'
-    + '<button onclick="confirmarImport(this)" style="background:#00a558;border:none;border-radius:10px;padding:11px;color:#fff;font-size:13px;font-weight:600;cursor:pointer">Selecionar PDF</button>'
-    + '</div></div>';
-  document.body.appendChild(overlay);
-}
-
-function confirmarImport(btn) {
-  var dataEscolhida = document.getElementById("import-data-input").value;
-  btn.closest("div").parentNode.remove();
-  var fData = document.getElementById("f-data");
-  if (fData && dataEscolhida) {
-    fData.value = dataEscolhida;
-    renderExames();
-  }
-  document.getElementById("inp-pdf").click();
-}
-
 function importarPDF(input) {
   var file = input.files[0];
   if (!file) return;
@@ -1107,7 +1072,7 @@ function importarPDF(input) {
 
 function processarTextoPDF(texto) {
   var importados = 0, duplicados = 0;
-  var dataHoje = (document.getElementById("f-data") && document.getElementById("f-data").value) ? document.getElementById("f-data").value : hj();
+  var dataHoje = hj();
   var unidade = usr.un || "Francisco Morato";
   var veiPadrao = VH[unidade].carros[0];
 
@@ -1140,30 +1105,11 @@ function processarTextoPDF(texto) {
   var temSP = texto.indexOf("SP-") !== -1;
 
   if (temCPF && !temSP) {
-    // Estrategia 4: formato SAE/CIRETRAN (SEQ NOME CPF CAT) - roda primeiro
-    var textoLimpo4 = texto.replace(/[^\x20-\x7E\xC0-\xFF\n]/g," ").replace(/[ \t]{2,}/g," ");
-    var linhasS4 = textoLimpo4.split("\n");
-    for (var i4=0; i4<linhasS4.length; i4++) {
-      var ls4 = linhasS4[i4].trim();
-      var ms4 = ls4.match(/^(\d{1,2})\s+([A-Z][A-Z ]{2,60}?)\s+(\d{3}\.\d{3}\.\d{3}-\d{2})\s+([AB\/]+)/);
-      if (ms4) {
-        var seq4=parseInt(ms4[1]);
-        var nome4=ms4[2].trim();
-        var cpf4=ms4[3].trim();
-        var cat4=ms4[4].trim();
-        if (seq4>=1 && seq4<=50 && nome4.length>3 && nome4!=="NOME DO CANDIDATO") {
-          add(nome4,cpf4,cat4,null,"08:00","Importado - complete LDV e veiculo");
-        }
-      }
-    }
-
     // Estratégia 1: linha a linha com número sequencial
-    if (importados===0) {
-      var linhasNorm = textoNorm.split("\n");
-      for (var i=0;i<linhasNorm.length;i++) {
-        var m=linhasNorm[i].trim().match(/^(\d{1,2})\s+([A-Z][A-Z\s]{3,60})\s+(\d{3}\.\d{3}\.\d{3}-\d{2})\s+([AB\/]+)/);
-        if(m) add(m[2].trim(),m[3].trim(),m[4],null,"08:00","Importado - complete LDV e veiculo");
-      }
+    var linhasNorm = textoNorm.split("\n");
+    for (var i=0;i<linhasNorm.length;i++) {
+      var m=linhasNorm[i].trim().match(/^(\d{1,2})\s+([A-Z][A-Z\s]{3,60})\s+(\d{3}\.\d{3}\.\d{3}-\d{2})\s+([AB\/]+)/);
+      if(m) add(m[2].trim(),m[3].trim(),m[4],null,"08:00","Importado - complete LDV e veiculo");
     }
 
     // Estratégia 2: texto junto com número sequencial
@@ -1189,6 +1135,7 @@ function processarTextoPDF(texto) {
       }
     }
   }
+
   // FORMATO 1: DETRAN CPF SP- NOME ---- CAT
   if (importados===0 && temSP) {
     for (var i=0;i<linhas.length;i++) {
@@ -1211,23 +1158,15 @@ function processarTextoPDF(texto) {
     }
   }
 
-  if (importados===0 && duplicados===0) {
+  if (importados===0) {
     var debugDiv = document.createElement("div");
     debugDiv.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;padding:20px;overflow:auto";
     debugDiv.innerHTML = "<h3 style='color:white;margin-bottom:10px'>Texto lido do PDF (copie e mande para o suporte):</h3><textarea style='width:100%;height:80%;background:#111;color:#0f0;font-family:monospace;font-size:11px;padding:10px'>" + texto + "</textarea><br><button onclick='this.parentNode.remove()' style='margin-top:10px;padding:8px 20px;background:#c00;color:#fff;border:none;cursor:pointer'>Fechar</button>";
     document.body.appendChild(debugDiv);
     return;
   }
-  salvarNuvem();
-  setTimeout(function(){
-    renderExames(); updStats();
-    var msg = importados+" aluno(s) importado(s)!"+(duplicados>0?" ("+duplicados+" já existiam)":"");
-    var toast = document.createElement("div");
-    toast.style.cssText = "position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#00a558;color:#fff;font-size:14px;font-weight:600;padding:14px 28px;border-radius:12px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.4)";
-    toast.textContent = "✅ "+msg;
-    document.body.appendChild(toast);
-    setTimeout(function(){ toast.remove(); }, 4000);
-  }, 400);
+  salvarNuvem(); renderExames(); updStats();
+  alert(importados+" aluno(s) importado(s)!"+(duplicados>0?"\n"+duplicados+" ja existiam.":"")+"\n\nComplete os dados com o botao Editar.");
 }
 
 
