@@ -374,7 +374,7 @@ body{background:var(--bg);color:var(--text);min-height:100vh}
     <div class="main-content">
       <div class="topbar">
         <div class="topbar-title" id="topbar-title">Exames do Dia</div>
-        <div class="topbar-sync">nuvem sincronizada</div>
+        <div class="topbar-sync" id="topbar-sync">sincronizando...</div>
         <div class="topbar-date" id="topbar-date"></div>
       </div>
       <div class="page-area">
@@ -930,6 +930,7 @@ var nuvemCarregada = false;
 function salvarNuvem() {
   if (!nuvemCarregada) {
     console.warn("Bloqueado: tentativa de salvar antes de carregar dados da nuvem.");
+    alert("Atenção: ainda sincronizando com a nuvem. Esta ação pode não ter sido salva — aguarde e tente de novo.");
     return;
   }
   db.ref('alunos').set(alunos);
@@ -950,6 +951,8 @@ function carregarNuvem() {
       alunos = [];
     }
     nuvemCarregada = true;
+    var syncEl = document.getElementById("topbar-sync");
+    if (syncEl) syncEl.textContent = "nuvem sincronizada";
     if (abaAtual === 'exames') renderExames();
     if (abaAtual === 'dashboard') renderDash();
     if (abaAtual === 'historico') renderHist();
@@ -1046,6 +1049,10 @@ function importarPDF(input) {
   var file = input.files[0];
   if (!file) return;
   input.value = "";
+  if (!nuvemCarregada) {
+    alert("Aguarde — sincronizando com a nuvem antes de importar. Tente novamente em alguns segundos.");
+    return;
+  }
   if (typeof pdfjsLib === "undefined") { alert("PDF.js nao carregou. Recarregue a pagina."); return; }
   pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js";
   var reader = new FileReader();
