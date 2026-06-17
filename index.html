@@ -925,7 +925,13 @@ firebase.initializeApp(firebaseConfig);
 var db = firebase.database();
 
 // ── Salvar alunos no Firebase ──
+var nuvemCarregada = false;
+
 function salvarNuvem() {
+  if (!nuvemCarregada) {
+    console.warn("Bloqueado: tentativa de salvar antes de carregar dados da nuvem.");
+    return;
+  }
   db.ref('alunos').set(alunos);
 }
 
@@ -934,12 +940,20 @@ function carregarNuvem() {
   db.ref('alunos').on('value', function(snapshot) {
     var dados = snapshot.val();
     if (dados) {
-      alunos = dados;
-      if (abaAtual === 'exames') renderExames();
-      if (abaAtual === 'dashboard') renderDash();
-      if (abaAtual === 'historico') renderHist();
-      updStats();
+      // Firebase pode devolver objeto em vez de array se houver "buracos"
+      if (Array.isArray(dados)) {
+        alunos = dados.filter(function(a){ return a; }); // remove nulls
+      } else {
+        alunos = Object.values(dados);
+      }
+    } else {
+      alunos = [];
     }
+    nuvemCarregada = true;
+    if (abaAtual === 'exames') renderExames();
+    if (abaAtual === 'dashboard') renderDash();
+    if (abaAtual === 'historico') renderHist();
+    updStats();
   });
 }
 
